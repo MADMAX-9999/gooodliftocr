@@ -1,0 +1,15 @@
+{
+  "name": "GOOOD Lift OCR",
+  "short_name": "GOOOD Lift",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#090d16",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2936/2936886.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
