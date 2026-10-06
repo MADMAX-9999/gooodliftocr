@@ -168,14 +168,11 @@
       <option value="90">90 minut</option>
     </select>
 
-    <label>Gemini API Key (z aistudio.google.com)</label>
-    <input type="password" id="gemini-key" placeholder="Wklej klucz API lub użyj przycisku demo">
-
     <label>Zdjęcie tablicy z rozpisanym treningiem</label>
     <input type="file" id="board-image" accept="image/*" capture="environment">
 
     <div class="row" style="margin-top: 8px;">
-      <button class="btn-primary" style="margin-top:0;" onclick="processImage()">Odczytaj zdjęcie & Parsuj</button>
+      <button class="btn-primary" style="margin-top:0;" id="btn-scan" onclick="processImage()">Odczytaj zdjęcie & Parsuj</button>
       <button class="btn-secondary" onclick="loadMockPlan()">Wczytaj foto z tablicy (Demo)</button>
     </div>
 
@@ -303,6 +300,11 @@
 </div>
 
 <script>
+// ========================================================
+// 🔑 KLUCZ API GEMINI
+// ========================================================
+const EMBEDDED_GEMINI_KEY = "AQ.Ab8RN6K8wSiGA8OFYq5UpgqCKXhO7JqFZShU0wIRo9FsmNro3Q";
+
 // --- STAN APLIKACJI I BAZA LOKALNA ---
 let appData = {
   profiles: JSON.parse(localStorage.getItem('wl_profiles')) || [
@@ -469,44 +471,81 @@ function calculatePlates(totalWeight, barWeight = 20) {
   return `Gryf ${barWeight} kg + po ${perSide.toFixed(2).replace('.00','')} kg na stronę [${platesUsed.join(' + ')}]`;
 }
 
-// --- AI VISION / DEMO ---
+// --- AI VISION (Z AUTOMATYCZNYM PRZEŁĄCZANIEM MODELI I OBSŁUGĄ PRZECIĄŻENIA) ---
 async function processImage() {
   saveCurrentProfileInputs();
   const fileInput = document.getElementById('board-image');
-  const apiKey = document.getElementById('gemini-key').value.trim();
+  const apiKey = EMBEDDED_GEMINI_KEY.trim();
 
   if (!fileInput.files[0]) {
     alert("Wybierz lub zrób zdjęcie tablicy!");
     return;
   }
-  if (!apiKey) {
-    alert("Podaj klucz API Gemini lub kliknij 'Wczytaj foto z tablicy (Demo)'.");
-    return;
-  }
+
+  const btn = document.getElementById('btn-scan');
+  const originalText = btn.textContent;
+  btn.textContent = "⏳ Analizuję tablicę...";
+  btn.disabled = true;
 
   const file = fileInput.files[0];
   const reader = new FileReader();
   reader.readAsDataURL(file);
   reader.onload = async () => {
     const base64Data = reader.result.split(',')[1];
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: "Jesteś trenerem podnoszenia ciężarów. Przeanalizuj odręczną tablicę. Zwróć WYŁĄCZNIE czysty JSON w postaci tablicy obiektów: [{\"name\":\"nazwa ćwiczenia\",\"base\":\"snatch lub clean\",\"minPercent\":40,\"maxPercent\":60,\"reps\":\"2+2\",\"sets\":4}]. Brak markdownu, czysty tekst JSON." },
-              { inline_data: { mime_type: file.type, data: base64Data } }
-            ]
-          }]
-        })
-      });
-      const resData = await response.json();
-      let text = resData.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
-      renderPlanEditor(JSON.parse(text));
-    } catch (err) {
-      alert("Błąd odczytu z API: " + err.message);
+    
+    // Lista stabilnych modeli produkcyjnych
+    const modelsToTry = [
+      "gemini-2.5-flash",
+      "gemini-1.5-flash",
+      "gemini-1.5-flash-8b"
+    ];
+
+    let success = false;
+    let lastError = "";
+
+    const payload = {
+      contents: [{
+        parts: [
+          { text: "Jesteś trenerem podnoszenia ciężarów. Przeanalizuj odręczną tablicę. Zwróć WYŁĄCZNIE czysty JSON w postaci tablicy obiektów: [{\"name\":\"nazwa ćwiczenia\",\"base\":\"snatch lub clean\",\"minPercent\":40,\"maxPercent\":60,\"reps\":\"2+2\",\"sets\":4}]. Brak markdownu, czysty tekst JSON." },
+          { inlineData: { mimeType: file.type, data: base64Data } }
+        ]
+      }]
+    };
+
+    for (let model of modelsToTry) {
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const resData = await response.json();
+        
+        if (resData.error) {
+          lastError = resData.error.message || JSON.stringify(resData.error);
+          console.warn(`Model ${model} zwrócił błąd, przełączam na kolejny:`, lastError);
+          continue;
+        }
+
+        let text = resData.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+        renderPlanEditor(JSON.parse(text));
+        success = true;
+        break;
+      } catch (err) {
+        lastError = err.message;
+        console.warn(`Błąd połączenia z ${model}:`, err);
+      }
+    }
+
+    btn.textContent = originalText;
+    btn.disabled = false;
+
+    if (!success) {
+      alert("Wystąpił problem z analizą obrazu. Upewnij się, że klucz API jest poprawny.\n\nKomunikat: " + lastError);
     }
   };
 }
