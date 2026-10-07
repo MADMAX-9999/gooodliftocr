@@ -176,6 +176,12 @@
       <option value="90">90 minut</option>
     </select>
 
+    <label>Główny bój sesji (baza wyliczeń % 1RM)</label>
+    <select id="session-main-lift">
+      <option value="snatch" selected>🏋️‍♂️ Rwanie (Snatch 1RM)</option>
+      <option value="clean">🏋️‍♀️ Podrzut (Clean & Jerk 1RM)</option>
+    </select>
+
     <label>Wklej tekst planu treningowego</label>
     <textarea id="board-text" rows="8" placeholder="Np. 1/ CIĄG + ZAKŁADANIE + OHS&#10;20-30 / 3+3+3 powtórzenia, 3 serie" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0b1120; color: var(--text); font-size: 0.9rem; resize: vertical; font-family: monospace;"></textarea>
 
@@ -512,19 +518,21 @@ function calculatePlates(totalWeight, barWeight = 20) {
 
 // --- AI VISION (Z AUTOMATYCZNYM PRZEŁĄCZANIEM MODELI I OBSŁUGĄ PRZECIĄŻENIA) ---
 
-function parseWorkoutTextLocal(text) {
+function parseWorkoutTextLocal(text, defaultBase = "snatch") {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const plan = [];
   let currentExercise = null;
   
   for(let line of lines) {
      // Jeśli zaczyna się od cyfry i ukośnika lub kropki (np. "1/", "1.")
-     if (/^\d+\s*[\/\.]/.test(line)) {
+     if (/^\d+\s*[\/\.]\s*[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/i.test(line)) {
         let name = line.replace(/^\d+\s*[\/\.]\s*/, '').trim();
-        let base = "snatch"; 
+        let base = defaultBase; 
         let lowerName = name.toLowerCase();
-        if(lowerName.includes("podrzut") || lowerName.includes("zarzut") || lowerName.includes("góra") || lowerName.includes("siad przód")) {
+        if (lowerName.includes("podrzut") || lowerName.includes("zarzut") || lowerName.includes("góra") || lowerName.includes("siad przód")) {
             base = "clean";
+        } else if (lowerName.includes("rwanie") || lowerName.includes("rw") || lowerName.includes("ohs") || lowerName.includes("snatch")) {
+            base = "snatch";
         }
         currentExercise = { name: name, base: base };
      } else if (currentExercise && line.includes('/')) {
@@ -575,6 +583,7 @@ function parseWorkoutTextLocal(text) {
 function processText() {
   saveCurrentProfileInputs();
   const textInput = document.getElementById('board-text').value.trim();
+  const defaultBase = document.getElementById('session-main-lift') ? document.getElementById('session-main-lift').value : 'snatch';
 
   if (!textInput) {
     alert("Wklej najpierw tekst z planem treningu!");
@@ -582,7 +591,7 @@ function processText() {
   }
   
   try {
-     const plan = parseWorkoutTextLocal(textInput);
+     const plan = parseWorkoutTextLocal(textInput, defaultBase);
      if(plan.length === 0) {
         alert("Nie udało się odczytać żadnych ćwiczeń z tego formatu. Upewnij się, że tekst jest zgodny ze wzorem (np. '1/ Nazwa' a pod spodem '40-60 / 2+2 powtórzenia, 4 serie').");
         return;
