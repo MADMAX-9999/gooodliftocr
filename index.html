@@ -129,15 +129,23 @@
       </div>
     </div>
 
-    <!-- SUMA DWUBOJU I ILORAZ MASY -->
-    <div class="total-score-box">
+    <!-- WSKAŹNIKI MASTERS -->
+    <div class="total-score-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
       <div>
         <div class="score-item-val" id="calc-total-kg">225 kg</div>
-        <div class="score-item-label">Suma Dwuboju</div>
+        <div class="score-item-label">Dwubój</div>
       </div>
-      <div style="border-left: 1px solid var(--border); padding-left: 12px;">
+      <div style="border-left: 1px solid var(--border);">
         <div class="score-item-val" id="calc-ratio">2.65x</div>
-        <div class="score-item-label">Iloraz Wagi Ciała</div>
+        <div class="score-item-label">Iloraz Wagi</div>
+      </div>
+      <div style="border-top: 1px solid var(--border); padding-top: 8px;">
+        <div class="score-item-val" id="calc-sinclair" style="color: #fff;">0.0</div>
+        <div class="score-item-label">Sinclair</div>
+      </div>
+      <div style="border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding-top: 8px;">
+        <div class="score-item-val" id="calc-mcculloch" style="color: var(--warning);">0.0</div>
+        <div class="score-item-label">McCulloch</div>
       </div>
     </div>
 
@@ -168,12 +176,12 @@
       <option value="90">90 minut</option>
     </select>
 
-    <label>Zdjęcie tablicy z rozpisanym treningiem</label>
-    <input type="file" id="board-image" accept="image/*" capture="environment">
+    <label>Wklej tekst planu treningowego</label>
+    <textarea id="board-text" rows="8" placeholder="Np. 1/ CIĄG + ZAKŁADANIE + OHS&#10;20-30 / 3+3+3 powtórzenia, 3 serie" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0b1120; color: var(--text); font-size: 0.9rem; resize: vertical; font-family: monospace;"></textarea>
 
     <div class="row" style="margin-top: 8px;">
-      <button class="btn-primary" style="margin-top:0;" id="btn-scan" onclick="processImage()">Odczytaj zdjęcie & Parsuj</button>
-      <button class="btn-secondary" onclick="loadMockPlan()">Wczytaj foto z tablicy (Demo)</button>
+      <button class="btn-primary" style="margin-top:0;" id="btn-scan" onclick="processText()">Przeanalizuj tekst & Parsuj</button>
+      <button class="btn-secondary" onclick="loadMockPlan()">Wczytaj przykładowy (Demo)</button>
     </div>
 
     <div class="row" style="margin-top: 8px;">
@@ -273,6 +281,27 @@
   <div id="step-4" class="card hidden">
     <h2 style="color: var(--success); text-align: center; font-size: 1.5rem;">🎉 Świetna robota!</h2>
     <p style="text-align: center; margin: 8px 0;" id="cooldown-summary">Główna część treningu zakończona w zadanym czasie!</p>
+
+    <!-- TONNAŻ I RANKING -->
+    <div style="background: #0b1120; border: 1px solid var(--accent); border-radius: 10px; padding: 16px; margin: 12px 0; text-align: center;">
+      <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Całkowity zaliczony tonaż</div>
+      <div id="cooldown-tonnage-val" style="font-size: 2.4rem; font-weight: 900; color: var(--accent); margin: 4px 0; letter-spacing: 1px;">0 kg</div>
+      <div id="cooldown-ranking-text" style="font-size: 0.95rem; color: var(--text); line-height: 1.5; margin-top: 8px;"></div>
+      
+      <hr style="border: 0.5px solid var(--border); margin: 12px 0;">
+      
+      <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">Klasyfikacja Masters (Maksy z profilu)</div>
+      <div class="row" style="text-align: center;">
+        <div>
+           <div id="cd-sinclair" style="font-size: 1.3rem; font-weight: 800; color: #fff;">0</div>
+           <div style="font-size: 0.65rem; color: var(--text-muted);">PKT. SINCLAIR</div>
+        </div>
+        <div style="border-left: 1px solid var(--border);">
+           <div id="cd-mcculloch" style="font-size: 1.3rem; font-weight: 800; color: var(--warning);">0</div>
+           <div style="font-size: 0.65rem; color: var(--text-muted);">PKT. McCULLOCH</div>
+        </div>
+      </div>
+    </div>
     
     <div class="timer-box" style="border-color: var(--success); margin: 16px 0;">
       <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 700;">COOL DOWN / MOBILITY / ROZCIĄGANIE</div>
@@ -303,7 +332,7 @@
 // ========================================================
 // 🔑 KLUCZ API GEMINI
 // ========================================================
-const EMBEDDED_GEMINI_KEY = "AQ.Ab8RN6K8wSiGA8OFYq5UpgqCKXhO7JqFZShU0wIRo9FsmNro3Q";
+// Aplikacja działa 100% lokalnie. Brak klucza API.
 
 // --- STAN APLIKACJI I BAZA LOKALNA ---
 let appData = {
@@ -396,12 +425,22 @@ function updateTotalScore() {
   const snatch = parseFloat(document.getElementById('p-snatch').value) || 0;
   const clean = parseFloat(document.getElementById('p-clean').value) || 0;
   const bw = parseFloat(document.getElementById('p-bodyweight').value) || 1;
+  const age = parseFloat(document.getElementById('p-age').value) || 30;
 
   const total = snatch + clean;
   const ratio = (total / bw).toFixed(2);
 
   document.getElementById('calc-total-kg').textContent = `${total.toFixed(1).replace('.0','')} kg`;
   document.getElementById('calc-ratio').textContent = `${ratio}x`;
+  
+  const sCoeff = getSinclairCoeff(bw);
+  const sinclairPoints = total * sCoeff;
+  
+  const mCoeff = getMcCullochCoeff(age);
+  const mccullochPoints = sinclairPoints * mCoeff;
+  
+  document.getElementById('calc-sinclair').textContent = sinclairPoints.toFixed(1);
+  document.getElementById('calc-mcculloch').textContent = mccullochPoints.toFixed(1);
 }
 
 function createNewProfile() {
@@ -472,82 +511,86 @@ function calculatePlates(totalWeight, barWeight = 20) {
 }
 
 // --- AI VISION (Z AUTOMATYCZNYM PRZEŁĄCZANIEM MODELI I OBSŁUGĄ PRZECIĄŻENIA) ---
-async function processImage() {
-  saveCurrentProfileInputs();
-  const fileInput = document.getElementById('board-image');
-  const apiKey = EMBEDDED_GEMINI_KEY.trim();
 
-  if (!fileInput.files[0]) {
-    alert("Wybierz lub zrób zdjęcie tablicy!");
+function parseWorkoutTextLocal(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const plan = [];
+  let currentExercise = null;
+  
+  for(let line of lines) {
+     // Jeśli zaczyna się od cyfry i ukośnika lub kropki (np. "1/", "1.")
+     if (/^\d+\s*[\/\.]/.test(line)) {
+        let name = line.replace(/^\d+\s*[\/\.]\s*/, '').trim();
+        let base = "snatch"; 
+        let lowerName = name.toLowerCase();
+        if(lowerName.includes("podrzut") || lowerName.includes("zarzut") || lowerName.includes("góra") || lowerName.includes("siad przód")) {
+            base = "clean";
+        }
+        currentExercise = { name: name, base: base };
+     } else if (currentExercise && line.includes('/')) {
+        // Parametry mają "/" przed powtórzeniami np. "40-60 / 2+2 ..."
+        let parts = line.split('/');
+        if (parts.length >= 2) {
+           let pctPart = parts[0].trim();
+           let minPct = 0, maxPct = 0;
+           
+           let pctMatch = pctPart.match(/(\d+)\s*[-–—]\s*(\d+)/);
+           if (pctMatch) {
+              minPct = parseInt(pctMatch[1], 10);
+              maxPct = parseInt(pctMatch[2], 10);
+           } else {
+              let singlePct = pctPart.match(/(\d+)/);
+              if (singlePct) {
+                 minPct = parseInt(singlePct[1], 10);
+                 maxPct = minPct;
+              }
+           }
+           
+           let restPart = parts[1].trim();
+           let repsMatch = restPart.match(/^([\d\+]+)/);
+           let reps = repsMatch ? repsMatch[1] : "1";
+           
+           let sets = 3; // domyślnie 3 serie, jeśli nie znajdzie
+           let setMatch = line.match(/(\d+)\s*(?:seri|ser|s\b|x\b)/i);
+           if (setMatch) {
+              sets = parseInt(setMatch[1], 10);
+           }
+           
+           if (minPct > 0) {
+              plan.push({
+                 name: currentExercise.name,
+                 base: currentExercise.base,
+                 minPercent: minPct,
+                 maxPercent: maxPct,
+                 reps: reps,
+                 sets: sets
+              });
+           }
+        }
+     }
+  }
+  return plan;
+}
+
+function processText() {
+  saveCurrentProfileInputs();
+  const textInput = document.getElementById('board-text').value.trim();
+
+  if (!textInput) {
+    alert("Wklej najpierw tekst z planem treningu!");
     return;
   }
-
-  const btn = document.getElementById('btn-scan');
-  const originalText = btn.textContent;
-  btn.textContent = "⏳ Analizuję tablicę...";
-  btn.disabled = true;
-
-  const file = fileInput.files[0];
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = async () => {
-    const base64Data = reader.result.split(',')[1];
-    
-    // Lista stabilnych modeli produkcyjnych
-    const modelsToTry = [
-      "gemini-2.5-flash",
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-8b"
-    ];
-
-    let success = false;
-    let lastError = "";
-
-    const payload = {
-      contents: [{
-        parts: [
-          { text: "Jesteś trenerem podnoszenia ciężarów. Przeanalizuj odręczną tablicę. Zwróć WYŁĄCZNIE czysty JSON w postaci tablicy obiektów: [{\"name\":\"nazwa ćwiczenia\",\"base\":\"snatch lub clean\",\"minPercent\":40,\"maxPercent\":60,\"reps\":\"2+2\",\"sets\":4}]. Brak markdownu, czysty tekst JSON." },
-          { inlineData: { mimeType: file.type, data: base64Data } }
-        ]
-      }]
-    };
-
-    for (let model of modelsToTry) {
-      try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const resData = await response.json();
-        
-        if (resData.error) {
-          lastError = resData.error.message || JSON.stringify(resData.error);
-          console.warn(`Model ${model} zwrócił błąd, przełączam na kolejny:`, lastError);
-          continue;
-        }
-
-        let text = resData.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
-        renderPlanEditor(JSON.parse(text));
-        success = true;
-        break;
-      } catch (err) {
-        lastError = err.message;
-        console.warn(`Błąd połączenia z ${model}:`, err);
-      }
-    }
-
-    btn.textContent = originalText;
-    btn.disabled = false;
-
-    if (!success) {
-      alert("Wystąpił problem z analizą obrazu. Upewnij się, że klucz API jest poprawny.\n\nKomunikat: " + lastError);
-    }
-  };
+  
+  try {
+     const plan = parseWorkoutTextLocal(textInput);
+     if(plan.length === 0) {
+        alert("Nie udało się odczytać żadnych ćwiczeń z tego formatu. Upewnij się, że tekst jest zgodny ze wzorem (np. '1/ Nazwa' a pod spodem '40-60 / 2+2 powtórzenia, 4 serie').");
+        return;
+     }
+     renderPlanEditor(plan);
+  } catch(e) {
+     alert("Błąd parsowania: " + e.message);
+  }
 }
 
 function loadMockPlan() {
@@ -689,8 +732,14 @@ function renderHUD() {
     if (diff > 0) changeText = `Dołóż po ${(diff / 2).toFixed(2).replace('.00','')} kg na stronę`;
     if (diff < 0) changeText = `Zdejmij po ${(Math.abs(diff) / 2).toFixed(2).replace('.00','')} kg ze strony`;
     document.getElementById('hud-next-preview').innerHTML = `<strong>👉 Następna:</strong> ${next.name} (${next.reps} powt. • ${next.percent}% 1RM) — <strong>${next.targetKg.toFixed(1)} kg</strong> (${changeText})`;
+    
+    // Zwykły guzik następnej serii
+    document.querySelector('.btn-next').innerHTML = "NASTĘPNA SERIA &#187;";
   } else {
     document.getElementById('hud-next-preview').innerHTML = "<strong>👉 Ostatnia seria części głównej!</strong> Zaraz po niej startuje Cool Down.";
+    
+    // Zmiana tekstu przycisku na "KONIEC SESJI TRENINGOWEJ"
+    document.querySelector('.btn-next').innerHTML = "ZAKOŃCZ SESJĘ TRENINGOWĄ &#187;";
   }
 
   document.getElementById('btn-prev').disabled = (activeWorkout.currentSetIndex === 0);
@@ -764,6 +813,47 @@ function abortWorkout() {
 
 // --- KROK 4: COOL DOWN I ZAPIS ---
 function startCooldown() {
+  // Obliczenia Tonażu i Rankingu
+  const currentTonnage = calculateCurrentTonnage();
+  document.getElementById('cooldown-tonnage-val').textContent = currentTonnage.toLocaleString('pl-PL') + ' kg';
+  
+  // Klasyfikacja Masters
+  const profile = appData.profiles.find(x => x.id === appData.currentProfileId);
+  if(profile) {
+     const dwuboj = (profile.snatch || 0) + (profile.clean || 0);
+     const bw = profile.bodyweight || 85;
+     const age = profile.age || 30;
+     
+     const sCoeff = getSinclairCoeff(bw);
+     const sinclairPoints = dwuboj * sCoeff;
+     
+     const mCoeff = getMcCullochCoeff(age);
+     const mccullochPoints = sinclairPoints * mCoeff;
+     
+     document.getElementById('cd-sinclair').textContent = sinclairPoints.toFixed(2);
+     document.getElementById('cd-mcculloch').textContent = mccullochPoints.toFixed(2);
+  }
+  
+  let pastTonnages = appData.history.map(h => h.tonnage || 0);
+  let allTonnages = [...pastTonnages, currentTonnage];
+  allTonnages.sort((a, b) => b - a); // malejąco
+  
+  const totalWorkouts = allTonnages.length;
+  const rank = allTonnages.indexOf(currentTonnage) + 1;
+  const percentile = Math.ceil((rank / totalWorkouts) * 100);
+  
+  let rankingText = "";
+  if (totalWorkouts > 1) {
+     if (rank === 1) {
+       rankingText = `🏆 REKORD: 1. Miejsce!`;
+     } else {
+       rankingText = `TOP ${percentile}%`;
+     }
+  } else {
+     rankingText = `🏆 PIERWSZY TRENING!`;
+  }
+  document.getElementById('cooldown-ranking-text').innerHTML = `<span style="font-size: 1.8rem; font-weight: 900; color: #fff;">${rankingText}</span>`;
+
   cooldownRemaining = 15 * 60;
   clearInterval(cooldownInterval);
   cooldownInterval = setInterval(() => {
@@ -824,6 +914,31 @@ function showStep(step) {
   } else {
     document.getElementById(step).classList.remove('hidden');
   }
+}
+
+
+// Stałe Sinclair IWF (2021-2024) dla mężczyzn
+function getSinclairCoeff(bw) {
+    const A = 0.751945030;
+    const b = 175.508;
+    if (bw >= b) return 1.0;
+    return Math.pow(10, A * Math.pow(Math.log10(bw / b), 2));
+}
+
+// Stałe McCulloch (uproszczone współczynniki wiekowe dla Masters)
+function getMcCullochCoeff(age) {
+    if (age <= 30) return 1.0;
+    // Przybliżona tabela współczynników od 31 do 80+
+    const ageCoeffs = {
+        31: 1.016, 32: 1.031, 33: 1.046, 34: 1.061, 35: 1.077, 36: 1.092, 37: 1.108, 38: 1.124, 39: 1.140,
+        40: 1.156, 41: 1.173, 42: 1.190, 43: 1.208, 44: 1.226, 45: 1.244, 46: 1.263, 47: 1.282, 48: 1.302, 49: 1.322,
+        50: 1.343, 51: 1.364, 52: 1.386, 53: 1.409, 54: 1.432, 55: 1.456, 56: 1.480, 57: 1.505, 58: 1.531, 59: 1.558,
+        60: 1.585, 61: 1.613, 62: 1.642, 63: 1.672, 64: 1.703, 65: 1.735, 66: 1.768, 67: 1.802, 68: 1.837, 69: 1.873,
+        70: 1.910, 71: 1.948, 72: 1.988, 73: 2.029, 74: 2.071, 75: 2.115, 76: 2.160, 77: 2.207, 78: 2.256, 79: 2.306,
+        80: 2.358
+    };
+    if (age >= 80) return 2.358;
+    return ageCoeffs[age] || 1.0;
 }
 
 function pad(n) { return n < 10 ? '0' + n : n; }
