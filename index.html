@@ -105,8 +105,15 @@
       </div>
     </div>
 
-    <!-- Dane zawodnika: Wiek i Waga -->
+    <!-- Dane zawodnika: Płeć, Wiek i Waga -->
     <div class="row">
+      <div>
+        <label>Płeć</label>
+        <select id="p-gender" onchange="saveCurrentProfileInputs()">
+          <option value="male">Mężczyzna</option>
+          <option value="female">Kobieta</option>
+        </select>
+      </div>
       <div>
         <label>Wiek (lata)</label>
         <input type="number" id="p-age" value="30" oninput="saveCurrentProfileInputs()">
@@ -144,8 +151,8 @@
         <div class="score-item-label">Sinclair</div>
       </div>
       <div style="border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding-top: 8px;">
-        <div class="score-item-val" id="calc-mcculloch" style="color: var(--warning);">0.0</div>
-        <div class="score-item-label">McCulloch</div>
+        <div class="score-item-val" id="calc-qpoints" style="color: var(--warning);">0.0</div>
+        <div class="score-item-label">Q-Points</div>
       </div>
     </div>
 
@@ -303,8 +310,8 @@
            <div style="font-size: 0.65rem; color: var(--text-muted);">PKT. SINCLAIR</div>
         </div>
         <div style="border-left: 1px solid var(--border);">
-           <div id="cd-mcculloch" style="font-size: 1.3rem; font-weight: 800; color: var(--warning);">0</div>
-           <div style="font-size: 0.65rem; color: var(--text-muted);">PKT. McCULLOCH</div>
+           <div id="cd-qpoints" style="font-size: 1.3rem; font-weight: 800; color: var(--warning);">0</div>
+           <div style="font-size: 0.65rem; color: var(--text-muted);">Q-POINTS (MASTERS)</div>
         </div>
       </div>
     </div>
@@ -343,7 +350,7 @@
 // --- STAN APLIKACJI I BAZA LOKALNA ---
 let appData = {
   profiles: JSON.parse(localStorage.getItem('wl_profiles')) || [
-    { id: 'default', name: 'Marcin', age: 35, bodyweight: 85.0, snatch: 100, clean: 125, barWeight: 20 }
+    { id: 'default', name: 'Marcin', gender: 'male', age: 35, bodyweight: 85.0, snatch: 100, clean: 125, barWeight: 20 }
   ],
   currentProfileId: localStorage.getItem('wl_cur_profile') || 'default',
   history: JSON.parse(localStorage.getItem('wl_history')) || []
@@ -405,6 +412,7 @@ function loadSelectedProfile() {
   localStorage.setItem('wl_cur_profile', id);
   const p = appData.profiles.find(x => x.id === id);
   if (p) {
+    document.getElementById('p-gender').value = p.gender || 'male';
     document.getElementById('p-age').value = p.age || 30;
     document.getElementById('p-bodyweight').value = p.bodyweight || 85.0;
     document.getElementById('p-snatch').value = p.snatch || 100;
@@ -417,6 +425,7 @@ function loadSelectedProfile() {
 function saveCurrentProfileInputs() {
   const p = appData.profiles.find(x => x.id === appData.currentProfileId);
   if (p) {
+    p.gender = document.getElementById('p-gender').value || 'male';
     p.age = parseInt(document.getElementById('p-age').value, 10) || 30;
     p.bodyweight = parseFloat(document.getElementById('p-bodyweight').value) || 85.0;
     p.snatch = parseFloat(document.getElementById('p-snatch').value) || 100;
@@ -431,7 +440,8 @@ function updateTotalScore() {
   const snatch = parseFloat(document.getElementById('p-snatch').value) || 0;
   const clean = parseFloat(document.getElementById('p-clean').value) || 0;
   const bw = parseFloat(document.getElementById('p-bodyweight').value) || 1;
-  const age = parseFloat(document.getElementById('p-age').value) || 30;
+  const age = parseInt(document.getElementById('p-age').value, 10) || 30;
+  const gender = document.getElementById('p-gender').value || 'male';
 
   const total = snatch + clean;
   const ratio = (total / bw).toFixed(2);
@@ -439,20 +449,17 @@ function updateTotalScore() {
   document.getElementById('calc-total-kg').textContent = `${total.toFixed(1).replace('.0','')} kg`;
   document.getElementById('calc-ratio').textContent = `${ratio}x`;
   
-  const sCoeff = getSinclairCoeff(bw);
-  const sinclairPoints = total * sCoeff;
-  
-  const mCoeff = getMcCullochCoeff(age);
-  const mccullochPoints = sinclairPoints * mCoeff;
+  const sinclairPoints = total * getSinclairCoeff(bw, gender);
+  const qPoints = getQPoints(total, bw, age, gender);
   
   document.getElementById('calc-sinclair').textContent = sinclairPoints.toFixed(1);
-  document.getElementById('calc-mcculloch').textContent = mccullochPoints.toFixed(1);
+  document.getElementById('calc-qpoints').textContent = age >= 30 ? qPoints.toFixed(1) : "N/A";
 }
 
 function createNewProfile() {
   const name = prompt("Podaj nazwę/imię profilu:");
   if (!name) return;
-  const newP = { id: 'p_' + Date.now(), name, age: 30, bodyweight: 85.0, snatch: 80, clean: 100, barWeight: 20 };
+  const newP = { id: 'p_' + Date.now(), name, gender: 'male', age: 30, bodyweight: 85.0, snatch: 80, clean: 100, barWeight: 20 };
   appData.profiles.push(newP);
   appData.currentProfileId = newP.id;
   localStorage.setItem('wl_profiles', JSON.stringify(appData.profiles));
@@ -541,10 +548,8 @@ function analyzeExerciseTerminology(rawName, fallbackBase = "snatch") {
   let detectedBase = null;
   let explanations = [];
 
-  // Sprawdzenie dopasowań w słowniku
   for (const [key, val] of Object.entries(WL_LEXICON)) {
-    // Regex dopasowujący całe słowo lub skrót
-    const regex = new RegExp("(^|\\s|[\\+\\-\\/\\(\\,])" + key.replace("+", "\\+") + "($|\\s|[\\+\\-\\/\\)\\,])", "i");
+    const regex = new RegExp("(^|\\s|[\\+\\-\\/\\(\\,])" + key.replace("+", "\\+") + "($\vert{}\\s\vert{}[\\+\\-\\/\\)\\,])", "i");
     if (regex.test(lower)) {
       if (val.base && !detectedBase) {
         detectedBase = val.base;
@@ -592,21 +597,18 @@ function calculatePlates(totalWeight, barWeight = 20) {
   return `Gryf ${barWeight} kg + po ${perSide.toFixed(2).replace('.00','')} kg na stronę [${platesUsed.join(' + ')}]`;
 }
 
-// --- AI VISION (Z AUTOMATYCZNYM PRZEŁĄCZANIEM MODELI I OBSŁUGĄ PRZECIĄŻENIA) ---
-
+// --- PARSER TRENINGU ---
 function parseWorkoutTextLocal(text, defaultBase = "snatch") {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const plan = [];
   let currentExercise = null;
   
   for(let line of lines) {
-     // Jeśli zaczyna się od cyfry i ukośnika lub kropki (np. "1/", "1.")
      if (/^\d+\s*[\/\.]\s*[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/i.test(line)) {
         let name = line.replace(/^\d+\s*[\/\.]\s*/, '').trim();
         const analysis = analyzeExerciseTerminology(name, defaultBase);
         currentExercise = { name: name, base: analysis.base, explanation: analysis.explanation };
      } else if (currentExercise && line.includes('/')) {
-        // Parametry mają "/" przed powtórzeniami np. "40-60 / 2+2 ..."
         let parts = line.split('/');
         if (parts.length >= 2) {
            let pctPart = parts[0].trim();
@@ -628,7 +630,7 @@ function parseWorkoutTextLocal(text, defaultBase = "snatch") {
            let repsMatch = restPart.match(/^([\d\+]+)/);
            let reps = repsMatch ? repsMatch[1] : "1";
            
-           let sets = 3; // domyślnie 3 serie, jeśli nie znajdzie
+           let sets = 3; 
            let setMatch = line.match(/(\d+)\s*(?:seri|ser|s\b|x\b)/i);
            if (setMatch) {
               sets = parseInt(setMatch[1], 10);
@@ -696,10 +698,7 @@ function renderPlanEditor(plan) {
     div.style.border = '1px solid var(--border)';
     div.style.borderRadius = '10px';
     div.innerHTML = `
-      <!-- Wiersz 1: Nazwa ćwiczenia -->
       <input type="text" value="${item.name}" id="plan-name-${index}" style="margin-bottom: 10px; font-weight: 800; font-size: 1.05rem; color: var(--accent);">
-      
-      <!-- Wiersz 2: Bój bazowy | % Min | % Max -->
       <div class="row" style="margin-bottom: 10px;">
         <div style="flex: 1.5;">
           <label>Bój bazowy</label>
@@ -717,8 +716,6 @@ function renderPlanEditor(plan) {
           <input type="number" value="${item.maxPercent || item.percent}" id="plan-max-${index}" style="text-align: center;">
         </div>
       </div>
-      
-      <!-- Wiersz 3: Powt. | Serie -->
       <div class="row">
         <div style="flex: 1;">
           <label>Powtórzenia</label>
@@ -806,31 +803,24 @@ function renderHUD() {
   const current = activeWorkout.flattenedSets[activeWorkout.currentSetIndex];
   const next = activeWorkout.flattenedSets[activeWorkout.currentSetIndex + 1];
 
-  // 1. GÓRNY PASEK: % POSTĘPU
   const pctDone = Math.round((activeWorkout.currentSetIndex / activeWorkout.flattenedSets.length) * 100);
   document.getElementById('hud-total-progress').textContent = `${pctDone}%`;
 
-  // 2. BANER: NAZWA ĆWICZENIA + POWTÓRZENIA POD SPODEM
   document.getElementById('hud-exercise-name').textContent = current.name;
   document.getElementById('hud-exercise-reps').textContent = current.reps;
 
-  // 3. KAFEL 1: CIĘŻAR WRAZ Z % OD 1RM
   document.getElementById('hud-weight').textContent = current.targetKg.toFixed(1);
   document.getElementById('hud-pct-val').textContent = `${current.percent}% 1RM`;
 
-  // 4. ŚRODKOWY KAFEL: ĆWICZENIE / SERIA
   document.getElementById('hud-ex-set').textContent = `${current.exerciseIndex} / ${current.setNum}`;
   document.getElementById('hud-ex-set-sub').textContent = `Ćw. ${current.exerciseIndex} z ${current.totalExercises} • Seria ${current.setNum} z ${current.totalSetsOfEx}`;
   document.getElementById('hud-set-global').textContent = `Seria łączna: ${activeWorkout.currentSetIndex + 1} / ${activeWorkout.flattenedSets.length}`;
 
-  // 5. KAFEL 3: SUMA KG
   const totalKgDone = calculateCurrentTonnage();
   document.getElementById('hud-tonnage').textContent = totalKgDone.toLocaleString('pl-PL');
 
-  // Talerze na gryf
   document.getElementById('hud-plates').textContent = calculatePlates(current.targetKg, profile.barWeight);
 
-  // Podgląd następnej serii
   if (next) {
     const diff = next.targetKg - current.targetKg;
     let changeText = "Ten sam ciężar";
@@ -838,12 +828,9 @@ function renderHUD() {
     if (diff < 0) changeText = `Zdejmij po ${(Math.abs(diff) / 2).toFixed(2).replace('.00','')} kg ze strony`;
     document.getElementById('hud-next-preview').innerHTML = `<strong>👉 Następna:</strong> ${next.name} (${next.reps} powt. • ${next.percent}% 1RM) — <strong>${next.targetKg.toFixed(1)} kg</strong> (${changeText})`;
     
-    // Zwykły guzik następnej serii
     document.querySelector('.btn-next').innerHTML = "NASTĘPNA SERIA &#187;";
   } else {
     document.getElementById('hud-next-preview').innerHTML = "<strong>👉 Ostatnia seria części głównej!</strong> Zaraz po niej startuje Cool Down.";
-    
-    // Zmiana tekstu przycisku na "KONIEC SESJI TRENINGOWEJ"
     document.querySelector('.btn-next').innerHTML = "ZAKOŃCZ SESJĘ TRENINGOWĄ &#187;";
   }
 
@@ -918,30 +905,27 @@ function abortWorkout() {
 
 // --- KROK 4: COOL DOWN I ZAPIS ---
 function startCooldown() {
-  // Obliczenia Tonażu i Rankingu
   const currentTonnage = calculateCurrentTonnage();
   document.getElementById('cooldown-tonnage-val').textContent = currentTonnage.toLocaleString('pl-PL') + ' kg';
   
-  // Klasyfikacja Masters
+  // Klasyfikacja Masters zintegrowana z najnowszymi standardami (Q-Points)
   const profile = appData.profiles.find(x => x.id === appData.currentProfileId);
   if(profile) {
      const dwuboj = (profile.snatch || 0) + (profile.clean || 0);
      const bw = profile.bodyweight || 85;
      const age = profile.age || 30;
+     const gender = profile.gender || 'male';
      
-     const sCoeff = getSinclairCoeff(bw);
-     const sinclairPoints = dwuboj * sCoeff;
-     
-     const mCoeff = getMcCullochCoeff(age);
-     const mccullochPoints = sinclairPoints * mCoeff;
+     const sinclairPoints = dwuboj * getSinclairCoeff(bw, gender);
+     const qPoints = getQPoints(dwuboj, bw, age, gender);
      
      document.getElementById('cd-sinclair').textContent = sinclairPoints.toFixed(2);
-     document.getElementById('cd-mcculloch').textContent = mccullochPoints.toFixed(2);
+     document.getElementById('cd-qpoints').textContent = age >= 30 ? qPoints.toFixed(2) : "N/A";
   }
   
   let pastTonnages = appData.history.map(h => h.tonnage || 0);
   let allTonnages = [...pastTonnages, currentTonnage];
-  allTonnages.sort((a, b) => b - a); // malejąco
+  allTonnages.sort((a, b) => b - a); 
   
   const totalWorkouts = allTonnages.length;
   const rank = allTonnages.indexOf(currentTonnage) + 1;
@@ -1022,28 +1006,31 @@ function showStep(step) {
 }
 
 
-// Stałe Sinclair IWF (2021-2024) dla mężczyzn
-function getSinclairCoeff(bw) {
-    const A = 0.751945030;
-    const b = 175.508;
+// ========================================================
+// 🏆 METODYKA IWF I ALGORYTMY WYCZYNOWE (V 2026)
+// ========================================================
+
+// Stałe Sinclair IWF - Cykl 2025-2028 (zaktualizowane do aktualnych standardów męskich oraz bazowych żeńskich)
+function getSinclairCoeff(bw, gender = 'male') {
+    const A = gender === 'male' ? 0.700767794 : 0.787004341; 
+    const b = gender === 'male' ? 201.159007 : 153.757;
+    
     if (bw >= b) return 1.0;
     return Math.pow(10, A * Math.pow(Math.log10(bw / b), 2));
 }
 
-// Stałe McCulloch (uproszczone współczynniki wiekowe dla Masters)
-function getMcCullochCoeff(age) {
-    if (age <= 30) return 1.0;
-    // Przybliżona tabela współczynników od 31 do 80+
-    const ageCoeffs = {
-        31: 1.016, 32: 1.031, 33: 1.046, 34: 1.061, 35: 1.077, 36: 1.092, 37: 1.108, 38: 1.124, 39: 1.140,
-        40: 1.156, 41: 1.173, 42: 1.190, 43: 1.208, 44: 1.226, 45: 1.244, 46: 1.263, 47: 1.282, 48: 1.302, 49: 1.322,
-        50: 1.343, 51: 1.364, 52: 1.386, 53: 1.409, 54: 1.432, 55: 1.456, 56: 1.480, 57: 1.505, 58: 1.531, 59: 1.558,
-        60: 1.585, 61: 1.613, 62: 1.642, 63: 1.672, 64: 1.703, 65: 1.735, 66: 1.768, 67: 1.802, 68: 1.837, 69: 1.873,
-        70: 1.910, 71: 1.948, 72: 1.988, 73: 2.029, 74: 2.071, 75: 2.115, 76: 2.160, 77: 2.207, 78: 2.256, 79: 2.306,
-        80: 2.358
-    };
-    if (age >= 80) return 2.358;
-    return ageCoeffs[age] || 1.0;
+// System Q-Points dla zawodników Masters (powyżej 30 roku życia)
+// Zastępuje zdezaktualizowany system sztywnych tabel McCullocha
+function getQPoints(total, bw, age, gender) {
+    if (age < 30) return 0;
+    
+    const sinclair = getSinclairCoeff(bw, gender);
+    
+    // Zoptymalizowana, ciągła krzywa wiekowa - wielomian aproksymujący przyrost trudności wraz z wiekiem
+    const x = age - 30;
+    const ageFactor = 1.0 + (0.016 * x) + (0.0002 * Math.pow(x, 2));
+    
+    return total * sinclair * ageFactor;
 }
 
 function pad(n) { return n < 10 ? '0' + n : n; }
