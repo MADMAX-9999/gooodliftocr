@@ -137,22 +137,26 @@
     </div>
 
     <!-- WSKAŹNIKI MASTERS -->
-    <div class="total-score-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-      <div>
+    <div class="total-score-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow: hidden;">
+      <div style="grid-column: 1 / -1; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border);">
         <div class="score-item-val" id="calc-total-kg">225 kg</div>
-        <div class="score-item-label">Dwubój</div>
+        <div class="score-item-label">DWUBÓJ</div>
       </div>
-      <div style="border-left: 1px solid var(--border);">
+      <div style="padding-right: 10px; padding-top: 4px;">
         <div class="score-item-val" id="calc-ratio">2.65x</div>
-        <div class="score-item-label">Iloraz masy</div>
+        <div class="score-item-label">ILORAZ WAGI</div>
       </div>
-      <div style="border-top: 1px solid var(--border); padding-top: 8px;">
+      <div style="border-left: 1px solid var(--border); padding-left: 10px; padding-top: 4px;">
         <div class="score-item-val" id="calc-sinclair" style="color: #fff;">0.0</div>
-        <div class="score-item-label">Sinclair</div>
+        <div class="score-item-label">SINCLAIR</div>
       </div>
-      <div style="border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding-top: 8px;">
+      <div style="border-top: 1px solid var(--border); padding-right: 10px; padding-top: 10px; margin-top: 10px;">
         <div class="score-item-val" id="calc-qpoints" style="color: var(--warning);">0.0</div>
-        <div class="score-item-label">Q-Masters</div>
+        <div class="score-item-label">Q-POINTS</div>
+      </div>
+      <div style="border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding-left: 10px; padding-top: 10px; margin-top: 10px;">
+        <div class="score-item-val" id="calc-qmasters" style="color: var(--accent);">0.0</div>
+        <div class="score-item-label">Q-MASTERS</div>
       </div>
     </div>
 
@@ -442,18 +446,17 @@ function updateTotalScore() {
   const bw = parseFloat(document.getElementById('p-bodyweight').value) || 1;
   const age = parseInt(document.getElementById('p-age').value, 10) || 30;
   const gender = document.getElementById('p-gender').value || 'male';
-
   const total = snatch + clean;
-  const ratio = (total / bw).toFixed(2);
-
+  const ratio = bw > 0 ? (total / bw).toFixed(2) : '0.00';
+  const sinclairPoints = total * getSinclairCoeff(bw, gender);
+  const qPoints = getQPoints(total, bw, gender, { useNordicFloor: false });
+  const qMasters = getQMasters(total, bw, age, gender, { useNordicFloor: false });
   document.getElementById('calc-total-kg').textContent = `${total.toFixed(1).replace('.0','')} kg`;
   document.getElementById('calc-ratio').textContent = `${ratio}x`;
-  
-  const sinclairPoints = total * getSinclairCoeff(bw, gender);
-  const qPoints = getQPoints(total, bw, age, gender);
-  
-  document.getElementById('calc-sinclair').textContent = sinclairPoints.toFixed(1);
-  document.getElementById('calc-qpoints').textContent = age >= 30 ? qPoints.toFixed(1) : "N/A";
+  document.getElementById('calc-sinclair').textContent = Number.isFinite(sinclairPoints) ? sinclairPoints.toFixed(1) : '0.0';
+  document.getElementById('calc-qpoints').textContent = Number.isFinite(qPoints) ? qPoints.toFixed(1) : '0.0';
+  const qMastersEl = document.getElementById('calc-qmasters');
+  if (qMastersEl) qMastersEl.textContent = Number.isFinite(qMasters) ? qMasters.toFixed(1) : '0.0';
 }
 
 function createNewProfile() {
@@ -1009,7 +1012,6 @@ function showStep(step) {
 function getSinclairCoeff(bw, gender = 'male') {
     const A = gender === 'male' ? 0.700767794 : 0.674107962;
     const b = gender === 'male' ? 201.159007 : 163.918008;
-
     if (!Number.isFinite(bw) || bw <= 0) return 0;
     if (bw >= b) return 1.0;
     return Math.pow(10, A * Math.pow(Math.log10(bw / b), 2));
@@ -1019,7 +1021,6 @@ function getSinclairCoeff(bw, gender = 'male') {
 // (Oficjalny standard IMWA i PZPC dla Q-Masters)
 function getMeltzerFaberCoeff(age, gender = 'male') {
     if (!Number.isFinite(age) || age < 30) return 1.0;
-
     const imwaMen = {
         30: 1.000, 31: 1.010, 32: 1.018, 33: 1.026, 34: 1.038, 35: 1.052, 36: 1.064, 37: 1.076, 38: 1.088, 39: 1.100,
         40: 1.112, 41: 1.124, 42: 1.136, 43: 1.148, 44: 1.160, 45: 1.173, 46: 1.187, 47: 1.201, 48: 1.215, 49: 1.230,
@@ -1029,7 +1030,6 @@ function getMeltzerFaberCoeff(age, gender = 'male') {
         80: 2.430, 81: 2.524, 82: 2.635, 83: 2.755, 84: 2.877, 85: 3.008, 86: 3.168, 87: 3.356, 88: 3.545, 89: 3.709,
         90: 3.880, 91: 4.059, 92: 4.247, 93: 4.443, 94: 4.648, 95: 4.863
     };
-
     const imwaWomen = {
         30: 1.000, 31: 1.010, 32: 1.021, 33: 1.031, 34: 1.042, 35: 1.052, 36: 1.063, 37: 1.073, 38: 1.084, 39: 1.096,
         40: 1.108, 41: 1.122, 42: 1.138, 43: 1.155, 44: 1.173, 45: 1.194, 46: 1.216, 47: 1.240, 48: 1.265, 49: 1.292,
@@ -1039,7 +1039,6 @@ function getMeltzerFaberCoeff(age, gender = 'male') {
         80: 2.918, 81: 3.009, 82: 3.104, 83: 3.201, 84: 3.301, 85: 3.403, 86: 3.507, 87: 3.613, 88: 3.720, 89: 3.827,
         90: 3.935
     };
-
     const table = gender === 'female' ? imwaWomen : imwaMen;
     const maxAge = gender === 'female' ? 90 : 95;
     if (age > maxAge) return table[maxAge];
@@ -1047,29 +1046,19 @@ function getMeltzerFaberCoeff(age, gender = 'male') {
 }
 
 // System Q-Points i Q-Masters
-function getQPoints(total, bw, age, gender, options = {}) {
+function getQPoints(total, bw, gender, options = {}) {
     if (!Number.isFinite(total) || !Number.isFinite(bw) || total <= 0 || bw <= 0) return 0;
-
-    const normalizedBw = options.useNordicFloor
-        ? (gender === 'female' ? Math.max(bw, 41) : Math.max(bw, 50))
-        : bw;
-
-    let q;
+    const normalizedBw = options.useNordicFloor ? (gender === 'female' ? Math.max(bw, 41) : Math.max(bw, 50)) : bw;
     if (gender === 'female') {
-        q = total * (306.54 / (266.50 - 19.44 * Math.pow(normalizedBw / 100, -2) + 18.61 * Math.pow(normalizedBw / 100, 2)));
-    } else {
-        q = total * (463.26 / (416.70 - 47.87 * Math.pow(normalizedBw / 100, -2) + 18.93 * Math.pow(normalizedBw / 100, 2)));
+        return total * (306.54 / (266.50 - 19.44 * Math.pow(normalizedBw / 100, -2) + 18.61 * Math.pow(normalizedBw / 100, 2)));
     }
-
-    if (!options.masters) return q;
+    return total * (463.26 / (416.70 - 47.87 * Math.pow(normalizedBw / 100, -2) + 18.93 * Math.pow(normalizedBw / 100, 2)));
+}
+function getQMasters(total, bw, age, gender, options = {}) {
+    const qPoints = getQPoints(total, bw, gender, options);
     const ageFactor = getMeltzerFaberCoeff(age, gender);
-    return q * ageFactor;
+    return qPoints * ageFactor;
 }
-
-function getOpenQPoints(total, bw, gender) {
-    return getQPoints(total, bw, 30, gender, { masters: false });
-}
-
 
 function pad(n) { return n < 10 ? '0' + n : n; }
 
@@ -1094,6 +1083,5 @@ ZASADY FORMATOWANIA WYJŚCIOWEGO:
 ======================================================================
 */
 </script>
-<!-- Aktualizacja współczynników: Sinclair 2025–2028, Q-points (Huebner 90. percentyl), Q-Masters z IMWA Age Factors 2025. -->
 </body>
 </html>
