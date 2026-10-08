@@ -1,0 +1,314 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-10-08",
+  "description": "Baza wiedzy i słownik skrótów Olympic Weightlifting dla GOOOD Lift OCR",
+  "categories": {
+    "snatch": {
+      "name": "Rwanie (Snatch)",
+      "baseLift": "snatch",
+      "terms": {
+        "rw": {
+          "pl": "Rwanie",
+          "en": "Snatch",
+          "desc": "Klasyczne rwanie lub ogólny bój rwaniowy"
+        },
+        "rwanie": {
+          "pl": "Rwanie",
+          "en": "Snatch",
+          "desc": "Klasyczny bój rwaniowy"
+        },
+        "snatch": {
+          "pl": "Rwanie",
+          "en": "Snatch",
+          "desc": "Angielski termin na rwanie"
+        },
+        "ohs": {
+          "pl": "Przysiad rwaniowy ze sztangą nad głową",
+          "en": "Overhead Squat",
+          "desc": "Przysiad ze sztangą trzymaną w szerokim chwycie nad głową"
+        },
+        "overhead squat": {
+          "pl": "Przysiad rwaniowy",
+          "en": "Overhead Squat",
+          "desc": "Przysiad ze sztangą nad głową"
+        },
+        "muscle snatch": {
+          "pl": "Rwanie siłowe",
+          "en": "Muscle Snatch",
+          "desc": "Rwanie bez ugięcia kolan przy odbiorze sztangi"
+        },
+        "zakładanie": {
+          "pl": "Zakładanie / Rwanie siłowe na proste nogi",
+          "en": "Muscle Snatch turnover",
+          "desc": "Ruch płynnego przeniesienia sztangi nad głowę bez podsiadu"
+        },
+        "ciąg rw": {
+          "pl": "Ciąg rwaniowy",
+          "en": "Snatch Pull",
+          "desc": "Ciąg sztangi szerokim chwytem rwaniowym"
+        },
+        "ciąg rwaniowy": {
+          "pl": "Ciąg rwaniowy",
+          "en": "Snatch Pull",
+          "desc": "Ciąg w chwycie rwaniowym"
+        },
+        "snatch pull": {
+          "pl": "Ciąg rwaniowy",
+          "en": "Snatch Pull",
+          "desc": "Ciąg rwaniowy"
+        },
+        "balans rwaniowy": {
+          "pl": "Wybicie rwaniowe ze zsuwaniem stóp / Heaving Snatch Balance",
+          "en": "Snatch Balance",
+          "desc": "Dynamika wejścia pod sztangę w chwycie rwaniowym"
+        },
+        "snatch balance": {
+          "pl": "Wybicie rwaniowe pod sztangę",
+          "en": "Snatch Balance",
+          "desc": "Wejście pod sztangę zza karku w szerokim chwycie"
+        }
+      }
+    },
+    "clean_jerk": {
+      "name": "Podrzut / Zarzut (Clean & Jerk)",
+      "baseLift": "clean",
+      "terms": {
+        "zr": {
+          "pl": "Zarzut",
+          "en": "Clean",
+          "desc": "Skrót od zarzut na klatkę"
+        },
+        "zarzut": {
+          "pl": "Zarzut",
+          "en": "Clean",
+          "desc": "Wyprowadzenie sztangi z pomostu na klatkę piersiową"
+        },
+        "clean": {
+          "pl": "Zarzut",
+          "en": "Clean",
+          "desc": "Angielski termin na zarzut"
+        },
+        "podrzut": {
+          "pl": "Podrzut",
+          "en": "Clean & Jerk",
+          "desc": "Cały bój podrzutowy"
+        },
+        "clean & jerk": {
+          "pl": "Podrzut",
+          "en": "Clean & Jerk",
+          "desc": "Zarzut i wybicie"
+        },
+        "c&j": {
+          "pl": "Podrzut",
+          "en": "Clean & Jerk",
+          "desc": "Skrót od Clean & Jerk"
+        },
+        "góra": {
+          "pl": "Wybicie z klatki / Góra podrzutowa",
+          "en": "Jerk",
+          "desc": "Wybicie sztangi z klatki nad głowę"
+        },
+        "jerk": {
+          "pl": "Góra podrzutowa",
+          "en": "Jerk",
+          "desc": "Wybicie sztangi nad głowę"
+        },
+        "nożyce": {
+          "pl": "Wybicie w nożyce",
+          "en": "Split Jerk",
+          "desc": "Wybicie sztangi z rozkrokiem nóg przód-tył"
+        },
+        "split jerk": {
+          "pl": "Wybicie w nożyce",
+          "en": "Split Jerk",
+          "desc": "Klasyczne wybicie podrzutowe w nożyce"
+        },
+        "pp": {
+          "pl": "Wyciskorzut",
+          "en": "Push Press",
+          "desc": "Wyciskanie z dynamicznym ugięciem kolan"
+        },
+        "push press": {
+          "pl": "Wyciskorzut",
+          "en": "Push Press",
+          "desc": "Wyciskanie ze wstępnym napędem z nóg"
+        },
+        "pj": {
+          "pl": "Wybicie na unik / półprzysiad",
+          "en": "Push Jerk / Power Jerk",
+          "desc": "Wybicie z podsiadem bez nożyc"
+        },
+        "power jerk": {
+          "pl": "Wybicie na unik",
+          "en": "Power Jerk",
+          "desc": "Wybicie na ugięte nogi bez wykroku"
+        },
+        "push jerk": {
+          "pl": "Wybicie na unik",
+          "en": "Push Jerk",
+          "desc": "Wybicie z lekkim ugięciem nóg"
+        },
+        "siad przód": {
+          "pl": "Przysiad przedni",
+          "en": "Front Squat",
+          "desc": "Przysiad ze sztangą na klatce piersiowej"
+        },
+        "przysiad przedni": {
+          "pl": "Przysiad przedni",
+          "en": "Front Squat",
+          "desc": "Przysiad ze sztangą trzymaną z przodu"
+        },
+        "front squat": {
+          "pl": "Przysiad przedni",
+          "en": "Front Squat",
+          "desc": "Przysiad przedni"
+        },
+        "fs": {
+          "pl": "Przysiad przedni",
+          "en": "Front Squat",
+          "desc": "Skrót od Front Squat"
+        },
+        "ciąg zr": {
+          "pl": "Ciąg zarzutowy",
+          "en": "Clean Pull",
+          "desc": "Ciąg sztangi w wąskim chwycie zarzutowym"
+        },
+        "ciąg zarzutowy": {
+          "pl": "Ciąg zarzutowy",
+          "en": "Clean Pull",
+          "desc": "Ciąg w chwycie na szerokość barków"
+        },
+        "clean pull": {
+          "pl": "Ciąg zarzutowy",
+          "en": "Clean Pull",
+          "desc": "Ciąg zarzutowy"
+        }
+      }
+    },
+    "modifiers": {
+      "name": "Modyfikatory Pozycji i Techniki",
+      "terms": {
+        "zpk": {
+          "pl": "Znad kolan / Z powieszenia pod kolanem",
+          "en": "Hang Below Knee",
+          "desc": "Start ruchu z pozycji zawieszenia sztangi pod kolanami"
+        },
+        "spk": {
+          "pl": "Spod kolan",
+          "en": "From below knees",
+          "desc": "Start ruchu poniżej rzepki"
+        },
+        "od kolan": {
+          "pl": "Od kolan",
+          "en": "From knees",
+          "desc": "Start ruchu na wysokości kolan"
+        },
+        "z biodra": {
+          "pl": "Z biodra (wysoki zwis)",
+          "en": "From High Hang / Hip",
+          "desc": "Ruch rozpoczynany bezpośrednio ze zgięcia biodrowego"
+        },
+        "wys": {
+          "pl": "Na wysoko (siłowo/półsiad)",
+          "en": "Power",
+          "desc": "Odbiór sztangi powyżej kąta prostego w kolanach"
+        },
+        "na wys": {
+          "pl": "Na wysoko",
+          "en": "Power",
+          "desc": "Odbiór sztangi na ugięte nogi bez pełnego siadu"
+        },
+        "power": {
+          "pl": "Na wysoko",
+          "en": "Power",
+          "desc": "Odbiór bez głębokiego siadu"
+        },
+        "siad": {
+          "pl": "W pełny siad",
+          "en": "Squat",
+          "desc": "Odbiór sztangi w pełnym, głębokim przysiadzie"
+        },
+        "na siad": {
+          "pl": "W pełny siad",
+          "en": "Squat",
+          "desc": "Zejście w dół do głębokiego przysiadu"
+        },
+        "squat": {
+          "pl": "W pełny siad",
+          "en": "Squat",
+          "desc": "Wariant z pełnym przysiadem"
+        },
+        "brs": {
+          "pl": "Bez rozstawiania stóp",
+          "en": "No Feet",
+          "desc": "Stopy pozostają przyklejone do podłoża bez przeskoku"
+        },
+        "bpd": {
+          "pl": "Bez podsiadu",
+          "en": "Without dip/squat",
+          "desc": "Ruch wykonywany na sztywnych lub zablokowanych nogach"
+        },
+        "pauza": {
+          "pl": "Z zatrzymaniem izometrycznym",
+          "en": "Pause",
+          "desc": "Wstrzymanie ruchu w wyznaczonym punkcie (np. na 1-2 sekundy)"
+        },
+        "z bloków": {
+          "pl": "Z bloków",
+          "en": "From blocks",
+          "desc": "Sztanga spoczywa na skrzyniach / podwyższeniach"
+        },
+        "bloki": {
+          "pl": "Z bloków",
+          "en": "From blocks",
+          "desc": "Wykonywane ze skrzyń"
+        }
+      }
+    },
+    "accessories": {
+      "name": "Ćwiczenia Akcesoryjne i Siłowe",
+      "terms": {
+        "wyciskanie": {
+          "pl": "Wyciskanie żołnierskie / klasyczne",
+          "en": "Strict Press",
+          "desc": "Wyciskanie siłowe bez pracy nóg"
+        },
+        "press": {
+          "pl": "Wyciskanie",
+          "en": "Press",
+          "desc": "Wyciskanie nad głowę"
+        },
+        "zza karku": {
+          "pl": "Zza karku",
+          "en": "Behind the Neck",
+          "desc": "Start ruchu ze sztangi spoczywającej na karku"
+        },
+        "btn": {
+          "pl": "Zza karku",
+          "en": "Behind the Neck",
+          "desc": "Skrót od Behind The Neck"
+        },
+        "wyskoki": {
+          "pl": "Wyskoki ze sztangą",
+          "en": "Barbell Jumps",
+          "desc": "Budowanie mocy i dynamiki wyprostu"
+        },
+        "batmany": {
+          "pl": "Wznosy ramion bokiem (hantle)",
+          "en": "Lateral Raises",
+          "desc": "Wzmocnienie bocznego aktonu m. naramiennego"
+        },
+        "bs": {
+          "pl": "Przysiad tylny",
+          "en": "Back Squat",
+          "desc": "Klasyczny przysiad ze sztangą na plecach"
+        },
+        "back squat": {
+          "pl": "Przysiad tylny",
+          "en": "Back Squat",
+          "desc": "Przysiad na plecach"
+        }
+      }
+    }
+  }
+}

@@ -483,6 +483,82 @@ function exportProfile() {
   a.click();
 }
 
+// ========================================================
+// 📖 SŁOWNIK TERMINOLOGII I SKRÓTÓW OLIMPIC WEIGHTLIFTING (V1.0)
+// ========================================================
+const WL_LEXICON = {
+  // BAZA: RWANIE (SNATCH)
+  "rw": { full: "Rwanie", base: "snatch" },
+  "rwanie": { full: "Rwanie", base: "snatch" },
+  "snatch": { full: "Rwanie", base: "snatch" },
+  "ohs": { full: "Przysiad rwaniowy (Overhead Squat)", base: "snatch" },
+  "overhead squat": { full: "Przysiad rwaniowy", base: "snatch" },
+  "muscle snatch": { full: "Rwanie siłowe", base: "snatch" },
+  "zakładanie": { full: "Rwanie siłowe / Zakładanie", base: "snatch" },
+  "ciąg rw": { full: "Ciąg rwaniowy", base: "snatch" },
+  "ciąg rwaniowy": { full: "Ciąg rwaniowy", base: "snatch" },
+  "snatch balance": { full: "Wybicie rwaniowe", base: "snatch" },
+
+  // BAZA: PODRZUT (CLEAN & JERK)
+  "zr": { full: "Zarzut", base: "clean" },
+  "zarzut": { full: "Zarzut", base: "clean" },
+  "clean": { full: "Zarzut", base: "clean" },
+  "podrzut": { full: "Podrzut", base: "clean" },
+  "c&j": { full: "Podrzut (Clean & Jerk)", base: "clean" },
+  "góra": { full: "Wybicie z klatki (Góra)", base: "clean" },
+  "jerk": { full: "Wybicie z klatki", base: "clean" },
+  "nożyce": { full: "Wybicie w nożyce (Split Jerk)", base: "clean" },
+  "split jerk": { full: "Wybicie w nożyce", base: "clean" },
+  "pp": { full: "Push Press (Wyciskorzut)", base: "clean" },
+  "push press": { full: "Push Press (Wyciskorzut)", base: "clean" },
+  "pj": { full: "Push Jerk (Wybicie na unik)", base: "clean" },
+  "power jerk": { full: "Power Jerk (Wybicie na unik)", base: "clean" },
+  "siad przód": { full: "Przysiad przedni (Front Squat)", base: "clean" },
+  "front squat": { full: "Przysiad przedni", base: "clean" },
+  "fs": { full: "Przysiad przedni", base: "clean" },
+  "ciąg zr": { full: "Ciąg zarzutowy", base: "clean" },
+  "ciąg zarzutowy": { full: "Ciąg zarzutowy", base: "clean" },
+
+  // MODYFIKATORY
+  "zpk": { full: "Znad kolan / z powieszenia" },
+  "spk": { full: "Spod kolan" },
+  "od kolan": { full: "Od kolan" },
+  "z biodra": { full: "Z biodra" },
+  "wys": { full: "Na wysoko (Power)" },
+  "na wys": { full: "Na wysoko (Power)" },
+  "power": { full: "Na wysoko (Power)" },
+  "siad": { full: "W pełny siad (Squat)" },
+  "na siad": { full: "W pełny siad (Squat)" },
+  "brs": { full: "Bez rozstawiania stóp (No Feet)" },
+  "bpd": { full: "Bez podsiadu" },
+  "btn": { full: "Zza karku (Behind the Neck)" },
+  "batmany": { full: "Wznosy ramion bokiem (hantle)" }
+};
+
+// Funkcja pomocnicza: inteligentne wykrywanie bazy i tłumaczenie skrótów
+function analyzeExerciseTerminology(rawName, fallbackBase = "snatch") {
+  const lower = rawName.toLowerCase();
+  let detectedBase = null;
+  let explanations = [];
+
+  // Sprawdzenie dopasowań w słowniku
+  for (const [key, val] of Object.entries(WL_LEXICON)) {
+    // Regex dopasowujący całe słowo lub skrót
+    const regex = new RegExp("(^|\\s|[\\+\\-\\/\\(\\,])" + key.replace("+", "\\+") + "($|\\s|[\\+\\-\\/\\)\\,])", "i");
+    if (regex.test(lower)) {
+      if (val.base && !detectedBase) {
+        detectedBase = val.base;
+      }
+      explanations.push(val.full);
+    }
+  }
+
+  return {
+    base: detectedBase || fallbackBase,
+    explanation: explanations.length > 0 ? explanations.join(" • ") : rawName
+  };
+}
+
 // --- PROGRESJA LINIOWA I KALKULACJE ---
 function generateProgressivePercentages(minPct, maxPct, setsCount) {
   if (setsCount <= 1) return [maxPct];
@@ -527,14 +603,8 @@ function parseWorkoutTextLocal(text, defaultBase = "snatch") {
      // Jeśli zaczyna się od cyfry i ukośnika lub kropki (np. "1/", "1.")
      if (/^\d+\s*[\/\.]\s*[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/i.test(line)) {
         let name = line.replace(/^\d+\s*[\/\.]\s*/, '').trim();
-        let base = defaultBase; 
-        let lowerName = name.toLowerCase();
-        if (lowerName.includes("podrzut") || lowerName.includes("zarzut") || lowerName.includes("góra") || lowerName.includes("siad przód")) {
-            base = "clean";
-        } else if (lowerName.includes("rwanie") || lowerName.includes("rw") || lowerName.includes("ohs") || lowerName.includes("snatch")) {
-            base = "snatch";
-        }
-        currentExercise = { name: name, base: base };
+        const analysis = analyzeExerciseTerminology(name, defaultBase);
+        currentExercise = { name: name, base: analysis.base, explanation: analysis.explanation };
      } else if (currentExercise && line.includes('/')) {
         // Parametry mają "/" przed powtórzeniami np. "40-60 / 2+2 ..."
         let parts = line.split('/');
