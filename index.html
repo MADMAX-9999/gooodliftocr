@@ -144,7 +144,7 @@
       </div>
       <div style="border-left: 1px solid var(--border);">
         <div class="score-item-val" id="calc-ratio">2.65x</div>
-        <div class="score-item-label">Iloraz Wagi</div>
+        <div class="score-item-label">Iloraz masy</div>
       </div>
       <div style="border-top: 1px solid var(--border); padding-top: 8px;">
         <div class="score-item-val" id="calc-sinclair" style="color: #fff;">0.0</div>
@@ -152,7 +152,7 @@
       </div>
       <div style="border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding-top: 8px;">
         <div class="score-item-val" id="calc-qpoints" style="color: var(--warning);">0.0</div>
-        <div class="score-item-label">Q-Points (Masters)</div>
+        <div class="score-item-label">Q-Masters</div>
       </div>
     </div>
 
@@ -1007,9 +1007,10 @@ function showStep(step) {
 
 // Stałe Sinclair IWF (2025-2028)
 function getSinclairCoeff(bw, gender = 'male') {
-    const A = gender === 'male' ? 0.700767794 : 0.787004341; 
-    const b = gender === 'male' ? 201.159007 : 153.757;
-    
+    const A = gender === 'male' ? 0.700767794 : 0.674107962;
+    const b = gender === 'male' ? 201.159007 : 163.918008;
+
+    if (!Number.isFinite(bw) || bw <= 0) return 0;
     if (bw >= b) return 1.0;
     return Math.pow(10, A * Math.pow(Math.log10(bw / b), 2));
 }
@@ -1017,38 +1018,58 @@ function getSinclairCoeff(bw, gender = 'male') {
 // Sztywne tabele współczynników wiekowych Meltzer-Faber / Huebner 
 // (Oficjalny standard IMWA i PZPC dla Q-Masters)
 function getMeltzerFaberCoeff(age, gender = 'male') {
-    if (age < 30) return 1.0;
-    
-    const mfMen = {
-        30: 1.000, 31: 1.016, 32: 1.031, 33: 1.046, 34: 1.061, 35: 1.077, 36: 1.092, 37: 1.108, 38: 1.124, 39: 1.140,
-        40: 1.156, 41: 1.173, 42: 1.190, 43: 1.208, 44: 1.226, 45: 1.244, 46: 1.263, 47: 1.282, 48: 1.302, 49: 1.322,
-        50: 1.343, 51: 1.364, 52: 1.386, 53: 1.409, 54: 1.432, 55: 1.456, 56: 1.480, 57: 1.505, 58: 1.531, 59: 1.558,
-        60: 1.585, 61: 1.613, 62: 1.642, 63: 1.672, 64: 1.703, 65: 1.735, 66: 1.768, 67: 1.802, 68: 1.837, 69: 1.873,
-        70: 1.910, 71: 1.948, 72: 1.988, 73: 2.029, 74: 2.071, 75: 2.115, 76: 2.160, 77: 2.207, 78: 2.256, 79: 2.306,
-        80: 2.358, 81: 2.412, 82: 2.468, 83: 2.527, 84: 2.589, 85: 2.653, 86: 2.721, 87: 2.793, 88: 2.868, 89: 2.948, 90: 3.033
+    if (!Number.isFinite(age) || age < 30) return 1.0;
+
+    const imwaMen = {
+        30: 1.000, 31: 1.010, 32: 1.018, 33: 1.026, 34: 1.038, 35: 1.052, 36: 1.064, 37: 1.076, 38: 1.088, 39: 1.100,
+        40: 1.112, 41: 1.124, 42: 1.136, 43: 1.148, 44: 1.160, 45: 1.173, 46: 1.187, 47: 1.201, 48: 1.215, 49: 1.230,
+        50: 1.247, 51: 1.264, 52: 1.283, 53: 1.304, 54: 1.327, 55: 1.351, 56: 1.376, 57: 1.401, 58: 1.425, 59: 1.451,
+        60: 1.477, 61: 1.504, 62: 1.531, 63: 1.560, 64: 1.589, 65: 1.620, 66: 1.654, 67: 1.693, 68: 1.736, 69: 1.784,
+        70: 1.833, 71: 1.883, 72: 1.932, 73: 1.981, 74: 2.031, 75: 2.083, 76: 2.139, 77: 2.202, 78: 2.271, 79: 2.348,
+        80: 2.430, 81: 2.524, 82: 2.635, 83: 2.755, 84: 2.877, 85: 3.008, 86: 3.168, 87: 3.356, 88: 3.545, 89: 3.709,
+        90: 3.880, 91: 4.059, 92: 4.247, 93: 4.443, 94: 4.648, 95: 4.863
     };
-    
-    const mfWomen = {
-        30: 1.000, 31: 1.014, 32: 1.028, 33: 1.042, 34: 1.057, 35: 1.072, 36: 1.087, 37: 1.103, 38: 1.119, 39: 1.135,
-        40: 1.151, 41: 1.168, 42: 1.185, 43: 1.203, 44: 1.221, 45: 1.240, 46: 1.259, 47: 1.278, 48: 1.298, 49: 1.318,
-        50: 1.339, 51: 1.360, 52: 1.382, 53: 1.404, 54: 1.427, 55: 1.450, 56: 1.474, 57: 1.498, 58: 1.523, 59: 1.549,
-        60: 1.575, 61: 1.601, 62: 1.629, 63: 1.657, 64: 1.686, 65: 1.716, 66: 1.746, 67: 1.777, 68: 1.809, 69: 1.842,
-        70: 1.876, 71: 1.911, 72: 1.947, 73: 1.984, 74: 2.022, 75: 2.061, 76: 2.101, 77: 2.143, 78: 2.186, 79: 2.230,
-        80: 2.275, 81: 2.322, 82: 2.370, 83: 2.420, 84: 2.471, 85: 2.525, 86: 2.580, 87: 2.637, 88: 2.696, 89: 2.757, 90: 2.820
+
+    const imwaWomen = {
+        30: 1.000, 31: 1.010, 32: 1.021, 33: 1.031, 34: 1.042, 35: 1.052, 36: 1.063, 37: 1.073, 38: 1.084, 39: 1.096,
+        40: 1.108, 41: 1.122, 42: 1.138, 43: 1.155, 44: 1.173, 45: 1.194, 46: 1.216, 47: 1.240, 48: 1.265, 49: 1.292,
+        50: 1.321, 51: 1.352, 52: 1.384, 53: 1.419, 54: 1.456, 55: 1.494, 56: 1.534, 57: 1.575, 58: 1.617, 59: 1.660,
+        60: 1.704, 61: 1.748, 62: 1.794, 63: 1.841, 64: 1.890, 65: 1.942, 66: 1.996, 67: 2.052, 68: 2.109, 69: 2.168,
+        70: 2.226, 71: 2.285, 72: 2.343, 73: 2.402, 74: 2.464, 75: 2.528, 76: 2.597, 77: 2.670, 78: 2.749, 79: 2.831,
+        80: 2.918, 81: 3.009, 82: 3.104, 83: 3.201, 84: 3.301, 85: 3.403, 86: 3.507, 87: 3.613, 88: 3.720, 89: 3.827,
+        90: 3.935
     };
-    
-    const table = gender === 'female' ? mfWomen : mfMen;
-    if (age > 90) return table[90];
-    return table[age] || 1.0;
+
+    const table = gender === 'female' ? imwaWomen : imwaMen;
+    const maxAge = gender === 'female' ? 90 : 95;
+    if (age > maxAge) return table[maxAge];
+    return table[Math.round(age)] || 1.0;
 }
 
 // System Q-Points i Q-Masters
-function getQPoints(total, bw, age, gender) {
-    if (age < 30) return 0;
-    const sinclair = getSinclairCoeff(bw, gender);
+function getQPoints(total, bw, age, gender, options = {}) {
+    if (!Number.isFinite(total) || !Number.isFinite(bw) || total <= 0 || bw <= 0) return 0;
+
+    const normalizedBw = options.useNordicFloor
+        ? (gender === 'female' ? Math.max(bw, 41) : Math.max(bw, 50))
+        : bw;
+
+    let q;
+    if (gender === 'female') {
+        q = total * (306.54 / (266.50 - 19.44 * Math.pow(normalizedBw / 100, -2) + 18.61 * Math.pow(normalizedBw / 100, 2)));
+    } else {
+        q = total * (463.26 / (416.70 - 47.87 * Math.pow(normalizedBw / 100, -2) + 18.93 * Math.pow(normalizedBw / 100, 2)));
+    }
+
+    if (!options.masters) return q;
     const ageFactor = getMeltzerFaberCoeff(age, gender);
-    return total * sinclair * ageFactor;
+    return q * ageFactor;
 }
+
+function getOpenQPoints(total, bw, gender) {
+    return getQPoints(total, bw, 30, gender, { masters: false });
+}
+
 
 function pad(n) { return n < 10 ? '0' + n : n; }
 
@@ -1073,5 +1094,6 @@ ZASADY FORMATOWANIA WYJŚCIOWEGO:
 ======================================================================
 */
 </script>
+<!-- Aktualizacja współczynników: Sinclair 2025–2028, Q-points (Huebner 90. percentyl), Q-Masters z IMWA Age Factors 2025. -->
 </body>
 </html>
