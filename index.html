@@ -152,7 +152,7 @@
       </div>
       <div style="border-top: 1px solid var(--border); border-left: 1px solid var(--border); padding-top: 8px;">
         <div class="score-item-val" id="calc-qpoints" style="color: var(--warning);">0.0</div>
-        <div class="score-item-label">Q-Points</div>
+        <div class="score-item-label">Q-Points (Masters)</div>
       </div>
     </div>
 
@@ -207,7 +207,7 @@
   <div id="step-2" class="card hidden">
     <h2>2. Weryfikacja planu i rampy</h2>
     <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
-      Zakresy % zostaną automatycznie rozłożone liniowo z serii na serię (np. 40–60% na 3 serie da 40%, 50%, 60%).
+      Zakresy % zostaną automatycznie rozłożone liniowo z serii na serię. Pusta sztanga to domyślnie 20 kg.
     </p>
     
     <div id="parsed-plan-container"></div>
@@ -491,10 +491,9 @@ function exportProfile() {
 }
 
 // ========================================================
-// 📖 SŁOWNIK TERMINOLOGII I SKRÓTÓW OLIMPIC WEIGHTLIFTING (V1.0)
+// 📖 SŁOWNIK TERMINOLOGII I SKRÓTÓW OLIMPIC WEIGHTLIFTING
 // ========================================================
 const WL_LEXICON = {
-  // BAZA: RWANIE (SNATCH)
   "rw": { full: "Rwanie", base: "snatch" },
   "rwanie": { full: "Rwanie", base: "snatch" },
   "snatch": { full: "Rwanie", base: "snatch" },
@@ -505,8 +504,6 @@ const WL_LEXICON = {
   "ciąg rw": { full: "Ciąg rwaniowy", base: "snatch" },
   "ciąg rwaniowy": { full: "Ciąg rwaniowy", base: "snatch" },
   "snatch balance": { full: "Wybicie rwaniowe", base: "snatch" },
-
-  // BAZA: PODRZUT (CLEAN & JERK)
   "zr": { full: "Zarzut", base: "clean" },
   "zarzut": { full: "Zarzut", base: "clean" },
   "clean": { full: "Zarzut", base: "clean" },
@@ -525,8 +522,6 @@ const WL_LEXICON = {
   "fs": { full: "Przysiad przedni", base: "clean" },
   "ciąg zr": { full: "Ciąg zarzutowy", base: "clean" },
   "ciąg zarzutowy": { full: "Ciąg zarzutowy", base: "clean" },
-
-  // MODYFIKATORY
   "zpk": { full: "Znad kolan / z powieszenia" },
   "spk": { full: "Spod kolan" },
   "od kolan": { full: "Od kolan" },
@@ -542,7 +537,6 @@ const WL_LEXICON = {
   "batmany": { full: "Wznosy ramion bokiem (hantle)" }
 };
 
-// Funkcja pomocnicza: inteligentne wykrywanie bazy i tłumaczenie skrótów
 function analyzeExerciseTerminology(rawName, fallbackBase = "snatch") {
   const lower = rawName.toLowerCase();
   let detectedBase = null;
@@ -551,9 +545,7 @@ function analyzeExerciseTerminology(rawName, fallbackBase = "snatch") {
   for (const [key, val] of Object.entries(WL_LEXICON)) {
     const regex = new RegExp("(^|\\s|[\\+\\-\\/\\(\\,])" + key.replace("+", "\\+") + "($\vert{}\\s\vert{}[\\+\\-\\/\\)\\,])", "i");
     if (regex.test(lower)) {
-      if (val.base && !detectedBase) {
-        detectedBase = val.base;
-      }
+      if (val.base && !detectedBase) detectedBase = val.base;
       explanations.push(val.full);
     }
   }
@@ -614,23 +606,27 @@ function parseWorkoutTextLocal(text, defaultBase = "snatch") {
            let pctPart = parts[0].trim();
            let minPct = 0, maxPct = 0;
            
-           let pctMatch = pctPart.match(/(\d+)\s*[-–—]\s*(\d+)/);
-           if (pctMatch) {
-              minPct = parseInt(pctMatch[1], 10);
-              maxPct = parseInt(pctMatch[2], 10);
+           if (pctPart.toUpperCase().includes('GRYF')) {
+              minPct = 20; maxPct = 20;
            } else {
-              let singlePct = pctPart.match(/(\d+)/);
-              if (singlePct) {
-                 minPct = parseInt(singlePct[1], 10);
-                 maxPct = minPct;
-              }
+               let pctMatch = pctPart.match(/(\d+)\s*[-–—]\s*(\d+)/);
+               if (pctMatch) {
+                  minPct = parseInt(pctMatch[1], 10);
+                  maxPct = parseInt(pctMatch[2], 10);
+               } else {
+                  let singlePct = pctPart.match(/(\d+)/);
+                  if (singlePct) {
+                     minPct = parseInt(singlePct[1], 10);
+                     maxPct = minPct;
+                  }
+               }
            }
            
            let restPart = parts[1].trim();
            let repsMatch = restPart.match(/^([\d\+]+)/);
            let reps = repsMatch ? repsMatch[1] : "1";
            
-           let sets = 3; 
+           let sets = 1; 
            let setMatch = line.match(/(\d+)\s*(?:seri|ser|s\b|x\b)/i);
            if (setMatch) {
               sets = parseInt(setMatch[1], 10);
@@ -665,7 +661,7 @@ function processText() {
   try {
      const plan = parseWorkoutTextLocal(textInput, defaultBase);
      if(plan.length === 0) {
-        alert("Nie udało się odczytać żadnych ćwiczeń z tego formatu. Upewnij się, że tekst jest zgodny ze wzorem (np. '1/ Nazwa' a pod spodem '40-60 / 2+2 powtórzenia, 4 serie').");
+        alert("Nie udało się odczytać żadnych ćwiczeń z tego formatu. Upewnij się, że tekst jest zgodny ze wzorem.");
         return;
      }
      renderPlanEditor(plan);
@@ -756,7 +752,10 @@ function startWorkout() {
     const repsNum = parseRepsNumber(reps);
 
     progressivePcts.forEach((pct, sIdx) => {
-      const targetKg = roundTo2_5((pct / 100) * baseWeight, profile.barWeight);
+      let targetKg = roundTo2_5((pct / 100) * baseWeight, profile.barWeight);
+      if (pct <= 30 && minPct === maxPct) {
+          targetKg = roundTo2_5(pct, profile.barWeight); // Fallback: jeśli wpisano np. puste 20kg 
+      }
       const restMultiplier = pct < 50 ? 0.75 : (pct >= 75 ? 1.35 : 1.0);
 
       activeWorkout.flattenedSets.push({
@@ -810,7 +809,7 @@ function renderHUD() {
   document.getElementById('hud-exercise-reps').textContent = current.reps;
 
   document.getElementById('hud-weight').textContent = current.targetKg.toFixed(1);
-  document.getElementById('hud-pct-val').textContent = `${current.percent}% 1RM`;
+  document.getElementById('hud-pct-val').textContent = current.percent <= 30 && current.targetKg <= 30 ? `ROZGRZEWKA` : `${current.percent}% 1RM`;
 
   document.getElementById('hud-ex-set').textContent = `${current.exerciseIndex} / ${current.setNum}`;
   document.getElementById('hud-ex-set-sub').textContent = `Ćw. ${current.exerciseIndex} z ${current.totalExercises} • Seria ${current.setNum} z ${current.totalSetsOfEx}`;
@@ -826,7 +825,7 @@ function renderHUD() {
     let changeText = "Ten sam ciężar";
     if (diff > 0) changeText = `Dołóż po ${(diff / 2).toFixed(2).replace('.00','')} kg na stronę`;
     if (diff < 0) changeText = `Zdejmij po ${(Math.abs(diff) / 2).toFixed(2).replace('.00','')} kg ze strony`;
-    document.getElementById('hud-next-preview').innerHTML = `<strong>👉 Następna:</strong> ${next.name} (${next.reps} powt. • ${next.percent}% 1RM) — <strong>${next.targetKg.toFixed(1)} kg</strong> (${changeText})`;
+    document.getElementById('hud-next-preview').innerHTML = `<strong>👉 Następna:</strong> ${next.name} (${next.reps} powt.) — <strong>${next.targetKg.toFixed(1)} kg</strong> (${changeText})`;
     
     document.querySelector('.btn-next').innerHTML = "NASTĘPNA SERIA &#187;";
   } else {
@@ -908,7 +907,6 @@ function startCooldown() {
   const currentTonnage = calculateCurrentTonnage();
   document.getElementById('cooldown-tonnage-val').textContent = currentTonnage.toLocaleString('pl-PL') + ' kg';
   
-  // Klasyfikacja Masters zintegrowana z najnowszymi standardami (Q-Points)
   const profile = appData.profiles.find(x => x.id === appData.currentProfileId);
   if(profile) {
      const dwuboj = (profile.snatch || 0) + (profile.clean || 0);
@@ -975,7 +973,6 @@ function finishFullWorkout() {
   showStep(1);
 }
 
-// --- HISTORIA ---
 function showHistory() {
   const list = document.getElementById('history-list');
   list.innerHTML = '';
@@ -993,7 +990,6 @@ function showHistory() {
   showStep('modal-history');
 }
 
-// --- NAWIGACJA ---
 function showStep(step) {
   ['step-1', 'step-2', 'step-3', 'step-4', 'modal-history'].forEach(id => {
     document.getElementById(id).classList.add('hidden');
@@ -1005,12 +1001,11 @@ function showStep(step) {
   }
 }
 
-
 // ========================================================
-// 🏆 METODYKA IWF I ALGORYTMY WYCZYNOWE (V 2026)
+// 🏆 METODYKA IWF I ALGORYTMY WYCZYNOWE MASTERS
 // ========================================================
 
-// Stałe Sinclair IWF - Cykl 2025-2028 (zaktualizowane do aktualnych standardów męskich oraz bazowych żeńskich)
+// Stałe Sinclair IWF (2025-2028)
 function getSinclairCoeff(bw, gender = 'male') {
     const A = gender === 'male' ? 0.700767794 : 0.787004341; 
     const b = gender === 'male' ? 201.159007 : 153.757;
@@ -1019,17 +1014,39 @@ function getSinclairCoeff(bw, gender = 'male') {
     return Math.pow(10, A * Math.pow(Math.log10(bw / b), 2));
 }
 
-// System Q-Points dla zawodników Masters (powyżej 30 roku życia)
-// Zastępuje zdezaktualizowany system sztywnych tabel McCullocha
+// Sztywne tabele współczynników wiekowych Meltzer-Faber / Huebner 
+// (Oficjalny standard IMWA i PZPC dla Q-Masters)
+function getMeltzerFaberCoeff(age, gender = 'male') {
+    if (age < 30) return 1.0;
+    
+    const mfMen = {
+        30: 1.000, 31: 1.016, 32: 1.031, 33: 1.046, 34: 1.061, 35: 1.077, 36: 1.092, 37: 1.108, 38: 1.124, 39: 1.140,
+        40: 1.156, 41: 1.173, 42: 1.190, 43: 1.208, 44: 1.226, 45: 1.244, 46: 1.263, 47: 1.282, 48: 1.302, 49: 1.322,
+        50: 1.343, 51: 1.364, 52: 1.386, 53: 1.409, 54: 1.432, 55: 1.456, 56: 1.480, 57: 1.505, 58: 1.531, 59: 1.558,
+        60: 1.585, 61: 1.613, 62: 1.642, 63: 1.672, 64: 1.703, 65: 1.735, 66: 1.768, 67: 1.802, 68: 1.837, 69: 1.873,
+        70: 1.910, 71: 1.948, 72: 1.988, 73: 2.029, 74: 2.071, 75: 2.115, 76: 2.160, 77: 2.207, 78: 2.256, 79: 2.306,
+        80: 2.358, 81: 2.412, 82: 2.468, 83: 2.527, 84: 2.589, 85: 2.653, 86: 2.721, 87: 2.793, 88: 2.868, 89: 2.948, 90: 3.033
+    };
+    
+    const mfWomen = {
+        30: 1.000, 31: 1.014, 32: 1.028, 33: 1.042, 34: 1.057, 35: 1.072, 36: 1.087, 37: 1.103, 38: 1.119, 39: 1.135,
+        40: 1.151, 41: 1.168, 42: 1.185, 43: 1.203, 44: 1.221, 45: 1.240, 46: 1.259, 47: 1.278, 48: 1.298, 49: 1.318,
+        50: 1.339, 51: 1.360, 52: 1.382, 53: 1.404, 54: 1.427, 55: 1.450, 56: 1.474, 57: 1.498, 58: 1.523, 59: 1.549,
+        60: 1.575, 61: 1.601, 62: 1.629, 63: 1.657, 64: 1.686, 65: 1.716, 66: 1.746, 67: 1.777, 68: 1.809, 69: 1.842,
+        70: 1.876, 71: 1.911, 72: 1.947, 73: 1.984, 74: 2.022, 75: 2.061, 76: 2.101, 77: 2.143, 78: 2.186, 79: 2.230,
+        80: 2.275, 81: 2.322, 82: 2.370, 83: 2.420, 84: 2.471, 85: 2.525, 86: 2.580, 87: 2.637, 88: 2.696, 89: 2.757, 90: 2.820
+    };
+    
+    const table = gender === 'female' ? mfWomen : mfMen;
+    if (age > 90) return table[90];
+    return table[age] || 1.0;
+}
+
+// System Q-Points i Q-Masters
 function getQPoints(total, bw, age, gender) {
     if (age < 30) return 0;
-    
     const sinclair = getSinclairCoeff(bw, gender);
-    
-    // Zoptymalizowana, ciągła krzywa wiekowa - wielomian aproksymujący przyrost trudności wraz z wiekiem
-    const x = age - 30;
-    const ageFactor = 1.0 + (0.016 * x) + (0.0002 * Math.pow(x, 2));
-    
+    const ageFactor = getMeltzerFaberCoeff(age, gender);
     return total * sinclair * ageFactor;
 }
 
@@ -1037,6 +1054,24 @@ function pad(n) { return n < 10 ? '0' + n : n; }
 
 // Inicjalizacja
 initProfiles();
+
+/* 
+======================================================================
+PROMPTY SYSTEMOWE DLA MODUŁU AI (OCR TRANSKRYPCJA)
+======================================================================
+Jesteś wyspecjalizowanym asystentem OCR i transkrypcji planów treningowych.
+Twoim jedynym zadaniem jest bezbłędne odczytywanie odręcznych notatek 
+z tablic treningowych (dwubój olimpijski) i formatowanie ich w ścisły kod tekstowy.
+ZASADY FORMATOWANIA WYJŚCIOWEGO:
+1. Zwracaj WYŁĄCZNIE blok czystego tekstu wewnątrz znacznika kodu (```text ... ```).
+2. Każde ćwiczenie musi zaczynać się od: [NUMER]/ [NAZWA ĆWICZENIA DUŻYMI LITERAMI].
+3. Parametry: [CIĘŻAR LUB ZAKRES %] / [POWTÓRZENIA] powtórzenia, [SERIE] serie.
+4. Multi-rampy: Wypisz każdą rampę w nowej linii pod tą samą nazwą.
+5. Jeśli brakuje serii: przyjmij domyślnie 1 seria.
+6. Sumuj powtórzenia złożone (np. 3+3+(3+3) na 3+3+3+3).
+7. Pusta sztanga / GRYF = 20.
+======================================================================
+*/
 </script>
 </body>
 </html>
