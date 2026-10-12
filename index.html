@@ -124,15 +124,19 @@
       </div>
     </div>
 
-    <!-- Maksy 1RM -->
+    <!-- Maksy 1RM: Rwanie, Zarzut, Podrzut -->
     <div class="row">
       <div>
         <label>Rwanie 1RM (kg)</label>
         <input type="number" id="p-snatch" value="100" oninput="saveCurrentProfileInputs()">
       </div>
       <div>
+        <label>Zarzut 1RM (kg)</label>
+        <input type="number" id="p-clean" value="130" oninput="saveCurrentProfileInputs()">
+      </div>
+      <div>
         <label>Podrzut 1RM (kg)</label>
-        <input type="number" id="p-clean" value="125" oninput="saveCurrentProfileInputs()">
+        <input type="number" id="p-jerk" value="125" oninput="saveCurrentProfileInputs()">
       </div>
     </div>
 
@@ -140,7 +144,7 @@
     <div class="total-score-box" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0; overflow: hidden;">
       <div style="grid-column: 1 / -1; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 1px solid var(--border);">
         <div class="score-item-val" id="calc-total-kg">225 kg</div>
-        <div class="score-item-label">DWUBÓJ</div>
+        <div class="score-item-label">DWUBÓJ (RWANIE + PODRZUT)</div>
       </div>
       <div style="padding-right: 10px; padding-top: 4px;">
         <div class="score-item-val" id="calc-ratio">2.65x</div>
@@ -175,7 +179,7 @@
 
     <div class="row">
       <div>
-        <label>Czas treningu (min)</label>
+        <label>Czas sesji</label>
         <select id="workout-time">
           <option value="45">45 minut</option>
           <option value="50" selected>50 minut</option>
@@ -193,7 +197,8 @@
         <label>Główny bój sesji</label>
         <select id="session-main-lift">
           <option value="snatch" selected>🏋️‍♂️ Rwanie (Snatch)</option>
-          <option value="clean">🏋️‍♀️ Podrzut (Clean)</option>
+          <option value="clean">🏋️ Zarzut (Clean)</option>
+          <option value="jerk">🏋️‍♀️ Podrzut (Jerk / C&J)</option>
         </select>
       </div>
       <div>
@@ -314,7 +319,7 @@
     <h2 style="color: var(--success); text-align: center; font-size: 1.5rem;">🎉 Świetna robota!</h2>
     <p style="text-align: center; margin: 8px 0;" id="cooldown-summary">Główna część treningu zakończona w zadanym czasie!</p>
 
-    <!-- TONAŻ I RANKING -->
+    <!-- TONNAŻ I RANKING -->
     <div style="background: #0b1120; border: 1px solid var(--accent); border-radius: 10px; padding: 16px; margin: 12px 0; text-align: center;">
       <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Całkowity zaliczony tonaż</div>
       <div id="cooldown-tonnage-val" style="font-size: 2.4rem; font-weight: 900; color: var(--accent); margin: 4px 0; letter-spacing: 1px;">0 kg</div>
@@ -364,7 +369,7 @@
 // --- STAN APLIKACJI I BAZA LOKALNA ---
 let appData = {
   profiles: JSON.parse(localStorage.getItem('wl_profiles')) || [
-    { id: 'default', name: 'Marcin', gender: 'male', age: 35, bodyweight: 85.0, snatch: 100, clean: 125, barWeight: 20, weightStep: 2.5 }
+    { id: 'default', name: 'Marcin', gender: 'male', age: 35, bodyweight: 85.0, snatch: 100, clean: 130, jerk: 125, barWeight: 20, weightStep: 2.5 }
   ],
   currentProfileId: localStorage.getItem('wl_cur_profile') || 'default',
   history: JSON.parse(localStorage.getItem('wl_history')) || []
@@ -432,7 +437,8 @@ function loadSelectedProfile() {
     document.getElementById('p-age').value = p.age || 30;
     document.getElementById('p-bodyweight').value = p.bodyweight || 85.0;
     document.getElementById('p-snatch').value = p.snatch || 100;
-    document.getElementById('p-clean').value = p.clean || 125;
+    document.getElementById('p-clean').value = p.clean || 130;
+    document.getElementById('p-jerk').value = p.jerk || p.clean || 125;
     document.getElementById('p-bar').value = p.barWeight || 20;
     document.getElementById('p-weight-step').value = p.weightStep || 2.5;
     updateTotalScore();
@@ -446,7 +452,8 @@ function saveCurrentProfileInputs() {
     p.age = parseInt(document.getElementById('p-age').value, 10) || 30;
     p.bodyweight = parseFloat(document.getElementById('p-bodyweight').value) || 85.0;
     p.snatch = parseFloat(document.getElementById('p-snatch').value) || 100;
-    p.clean = parseFloat(document.getElementById('p-clean').value) || 125;
+    p.clean = parseFloat(document.getElementById('p-clean').value) || 130;
+    p.jerk = parseFloat(document.getElementById('p-jerk').value) || 125;
     p.barWeight = parseFloat(document.getElementById('p-bar').value) || 20;
     p.weightStep = parseFloat(document.getElementById('p-weight-step').value) || 2.5;
     localStorage.setItem('wl_profiles', JSON.stringify(appData.profiles));
@@ -456,15 +463,18 @@ function saveCurrentProfileInputs() {
 
 function updateTotalScore() {
   const snatch = parseFloat(document.getElementById('p-snatch').value) || 0;
-  const clean = parseFloat(document.getElementById('p-clean').value) || 0;
+  const jerk = parseFloat(document.getElementById('p-jerk').value) || 0;
   const bw = parseFloat(document.getElementById('p-bodyweight').value) || 1;
   const age = parseInt(document.getElementById('p-age').value, 10) || 30;
   const gender = document.getElementById('p-gender').value || 'male';
-  const total = snatch + clean;
+  
+  // Oficjalny dwubój olimpijski: Rwanie + Podrzut
+  const total = snatch + jerk;
   const ratio = bw > 0 ? (total / bw).toFixed(2) : '0.00';
   const sinclairPoints = total * getSinclairCoeff(bw, gender);
   const qPoints = getQPoints(total, bw, gender, { useNordicFloor: false });
   const qMasters = getQMasters(total, bw, age, gender, { useNordicFloor: false });
+  
   document.getElementById('calc-total-kg').textContent = `${total.toFixed(1).replace('.0','')} kg`;
   document.getElementById('calc-ratio').textContent = `${ratio}x`;
   document.getElementById('calc-sinclair').textContent = Number.isFinite(sinclairPoints) ? sinclairPoints.toFixed(1) : '0.0';
@@ -476,7 +486,7 @@ function updateTotalScore() {
 function createNewProfile() {
   const name = prompt("Podaj nazwę/imię profilu:");
   if (!name) return;
-  const newP = { id: 'p_' + Date.now(), name, gender: 'male', age: 30, bodyweight: 85.0, snatch: 80, clean: 100, barWeight: 20, weightStep: 2.5 };
+  const newP = { id: 'p_' + Date.now(), name, gender: 'male', age: 30, bodyweight: 85.0, snatch: 80, clean: 105, jerk: 100, barWeight: 20, weightStep: 2.5 };
   appData.profiles.push(newP);
   appData.currentProfileId = newP.id;
   localStorage.setItem('wl_profiles', JSON.stringify(appData.profiles));
@@ -508,7 +518,7 @@ function exportProfile() {
 }
 
 // ========================================================
-// 📖 SŁOWNIK TERMINOLOGII I SKRÓTÓW DWUBOJU
+// 📖 SŁOWNIK TERMINOLOGII I SKRÓTÓW DWUBOJU (weightlifting_lexicon.json)
 // ========================================================
 const WL_LEXICON = {
   "rw": { full: "Rwanie", base: "snatch" },
@@ -516,33 +526,44 @@ const WL_LEXICON = {
   "snatch": { full: "Rwanie", base: "snatch" },
   "ohs": { full: "Przysiad rwaniowy (Overhead Squat)", base: "snatch" },
   "overhead squat": { full: "Przysiad rwaniowy", base: "snatch" },
-  "muscle snatch": { full: "Rwanie siłowe", base: "snatch" },
-  "zakładanie": { full: "Rwanie siłowe / Zakładanie", base: "snatch" },
+  "zakładanie": { full: "Rwanie siłowe na proste nogi (Muscle Snatch)", base: "snatch" },
+  "muscle snatch": { full: "Rwanie siłowe na proste nogi", base: "snatch" },
   "ciąg rw": { full: "Ciąg rwaniowy", base: "snatch" },
   "ciąg rwaniowy": { full: "Ciąg rwaniowy", base: "snatch" },
-  "snatch balance": { full: "Wybicie rwaniowe", base: "snatch" },
-  "zr": { full: "Zarzut", base: "clean" },
-  "zarzut": { full: "Zarzut", base: "clean" },
-  "clean": { full: "Zarzut", base: "clean" },
-  "podrzut": { full: "Podrzut", base: "clean" },
-  "c&j": { full: "Podrzut (Clean & Jerk)", base: "clean" },
-  "góra": { full: "Wybicie z klatki (Góra)", base: "clean" },
-  "jerk": { full: "Wybicie z klatki", base: "clean" },
-  "nożyce": { full: "Wybicie w nożyce (Split Jerk)", base: "clean" },
-  "split jerk": { full: "Wybicie w nożyce", base: "clean" },
-  "pp": { full: "Push Press (Wyciskorzut)", base: "clean" },
-  "push press": { full: "Push Press (Wyciskorzut)", base: "clean" },
-  "pj": { full: "Push Jerk (Wybicie na unik)", base: "clean" },
-  "power jerk": { full: "Power Jerk (Wybicie na unik)", base: "clean" },
+  "snatch pull": { full: "Ciąg rwaniowy", base: "snatch" },
+  "snatch balance": { full: "Wybicie rwaniowe ze zjazdem", base: "snatch" },
+  "heave": { full: "Wybicie rwaniowe bez zjazdu", base: "snatch" },
+  
+  "zr": { full: "Zarzut na klatkę", base: "clean" },
+  "zarzut": { full: "Zarzut na klatkę", base: "clean" },
+  "clean": { full: "Zarzut na klatkę", base: "clean" },
   "siad przód": { full: "Przysiad przedni (Front Squat)", base: "clean" },
   "front squat": { full: "Przysiad przedni", base: "clean" },
   "fs": { full: "Przysiad przedni", base: "clean" },
   "ciąg zr": { full: "Ciąg zarzutowy", base: "clean" },
   "ciąg zarzutowy": { full: "Ciąg zarzutowy", base: "clean" },
+  "clean pull": { full: "Ciąg zarzutowy", base: "clean" },
+  
+  "podrzut": { full: "Podrzut kompletny (Clean & Jerk)", base: "jerk" },
+  "c&j": { full: "Podrzut kompletny (Clean & Jerk)", base: "jerk" },
+  "clean and jerk": { full: "Podrzut kompletny (Clean & Jerk)", base: "jerk" },
+  "góra": { full: "Wybicie z klatki nad głowę", base: "jerk" },
+  "jerk": { full: "Wybicie z klatki nad głowę", base: "jerk" },
+  "nożyce": { full: "Wybicie w nożyce (Split Jerk)", base: "jerk" },
+  "split jerk": { full: "Wybicie w nożyce", base: "jerk" },
+  "pp": { full: "Wyciskorzut (Push Press)", base: "jerk" },
+  "push press": { full: "Wyciskorzut", base: "jerk" },
+  "pj": { full: "Wybicie na unik (Power Jerk)", base: "jerk" },
+  "power jerk": { full: "Wybicie na unik", base: "jerk" },
+  "wybicie ze stojaków": { full: "Wybicie z klatki ze stojaków", base: "jerk" },
+  "wybicie z bloków": { full: "Wybicie z bloków", base: "jerk" },
+
   "zpk": { full: "Znad kolan / z powieszenia" },
   "spk": { full: "Spod kolan" },
   "od kolan": { full: "Od kolan" },
   "z biodra": { full: "Z biodra" },
+  "z bloków": { full: "Z bloków" },
+  "z deficytu": { full: "Z podwyższenia / deficytu" },
   "wys": { full: "Na wysoko (Power)" },
   "na wys": { full: "Na wysoko (Power)" },
   "power": { full: "Na wysoko (Power)" },
@@ -584,7 +605,6 @@ function generateProgressivePercentages(minPct, maxPct, setsCount) {
   return percentages;
 }
 
-// Zaokrąglenie do najbliższego skoku wagi z zachowaniem dolnego progu (wagi gryfu)
 function roundToStep(val, barWeight = 20, step = 2.5) {
   const s = step > 0 ? step : 2.5;
   let rounded = Math.round(val / s) * s;
@@ -694,10 +714,9 @@ function loadMockPlan() {
   const mockPlan = [
     { name: "Ciąg + zakładanie + OHS", base: "snatch", minPercent: 20, maxPercent: 30, reps: "3+3+3", sets: 3 },
     { name: "RW na wys (pauza pod kolanem) + 2 biodra na siad", base: "snatch", minPercent: 40, maxPercent: 60, reps: "2+2", sets: 4 },
-    { name: "RW (pauza pod kolanem) - blok 1", base: "snatch", minPercent: 60, maxPercent: 70, reps: "3", sets: 3 },
-    { name: "RW (pauza pod kolanem) - blok 2", base: "snatch", minPercent: 75, maxPercent: 85, reps: "2", sets: 3 },
-    { name: "Ciąg RW (pauza pod kolanem)", base: "snatch", minPercent: 90, maxPercent: 100, reps: "3", sets: 3 },
-    { name: "Wyskoki z półsiadu", base: "snatch", minPercent: 40, maxPercent: 60, reps: "5", sets: 3 }
+    { name: "Zarzut na wys + siad przód", base: "clean", minPercent: 60, maxPercent: 75, reps: "2+2", sets: 4 },
+    { name: "Podrzut z bloków (ZR + góra)", base: "jerk", minPercent: 70, maxPercent: 85, reps: "1+1", sets: 5 },
+    { name: "Ciąg zarzutowy (clean pull)", base: "clean", minPercent: 90, maxPercent: 105, reps: "3", sets: 3 }
   ];
   renderPlanEditor(mockPlan);
 }
@@ -716,10 +735,11 @@ function renderPlanEditor(plan) {
       <input type="text" value="${item.name}" id="plan-name-${index}" style="margin-bottom: 10px; font-weight: 800; font-size: 1.05rem; color: var(--accent);">
       <div class="row" style="margin-bottom: 10px;">
         <div style="flex: 1.5;">
-          <label>Bój bazowy</label>
+          <label>Bój bazowy (1RM)</label>
           <select id="plan-base-${index}">
-            <option value="snatch" ${item.base === 'snatch' ? 'selected' : ''}>Rwanie</option>
-            <option value="clean" ${item.base === 'clean' ? 'selected' : ''}>Podrzut</option>
+            <option value="snatch" ${item.base === 'snatch' ? 'selected' : ''}>Rwanie 1RM</option>
+            <option value="clean" ${item.base === 'clean' ? 'selected' : ''}>Zarzut 1RM</option>
+            <option value="jerk" ${item.base === 'jerk' ? 'selected' : ''}>Podrzut 1RM</option>
           </select>
         </div>
         <div style="flex: 1;">
@@ -771,21 +791,24 @@ function startWorkout() {
     const reps = document.getElementById(`plan-reps-${index}`).value;
     const sets = parseInt(document.getElementById(`plan-sets-${index}`).value, 10);
 
-    const baseWeight = base === 'snatch' ? profile.snatch : profile.clean;
+    // Baza 1RM: Rwanie vs Zarzut vs Podrzut
+    let baseWeight = profile.snatch;
+    if (base === 'clean') baseWeight = profile.clean;
+    else if (base === 'jerk') baseWeight = profile.jerk || profile.clean;
+
     const progressivePcts = generateProgressivePercentages(minPct, maxPct, sets);
     const repsNum = parseRepsNumber(reps);
 
     progressivePcts.forEach((pct, sIdx) => {
-      // Wariant A: skalowanie proporcjonalne przez poziom intensywności
+      // Wariant A: skalowanie proporcjonalne
       const scaledPct = pct * intensityLevel;
       let rawCalculatedKg = (scaledPct / 100) * baseWeight;
 
       if (pct <= 30 && minPct === maxPct) {
-        // Fallback dla wpisów rozgrzewkowych o stałym obciążeniu
-        rawCalculatedKg = pct;
+        rawCalculatedKg = pct; // Fallback stałego obciążenia wpisanego z ręki
       }
 
-      // Zaokrąglenie do wybranego kroku wagi z dolnym progiem równym wadze gryfu
+      // Zaokrąglenie do skoku wagi z zachowaniem wagi gryfu jako dolnego progu
       const targetKg = roundToStep(rawCalculatedKg, profile.barWeight, userWeightStep);
       const restMultiplier = scaledPct < 50 ? 0.75 : (scaledPct >= 75 ? 1.35 : 1.0);
 
@@ -943,7 +966,7 @@ function startCooldown() {
   
   const profile = appData.profiles.find(x => x.id === appData.currentProfileId);
   if(profile) {
-     const dwuboj = (profile.snatch || 0) + (profile.clean || 0);
+     const dwuboj = (profile.snatch || 0) + (profile.jerk || profile.clean || 0);
      const bw = profile.bodyweight || 85;
      const age = profile.age || 30;
      const gender = profile.gender || 'male';
@@ -1049,7 +1072,7 @@ function getSinclairCoeff(bw, gender = 'male') {
     return Math.pow(10, A * Math.pow(Math.log10(bw / b), 2));
 }
 
-// Sztywne tabele współczynników wiekowych IMWA (Age Factors 2025)
+// Sztywne tabele współczynników wiekowych Meltzer-Faber / Huebner 
 function getMeltzerFaberCoeff(age, gender = 'male') {
     if (!Number.isFinite(age) || age < 30) return 1.0;
     const imwaMen = {
