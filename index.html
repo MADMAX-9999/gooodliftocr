@@ -163,35 +163,50 @@
     <div class="row">
       <div>
         <label>Waga gryfu (kg)</label>
-        <input type="number" id="p-bar" value="20" oninput="saveCurrentProfileInputs()">
+        <input type="number" step="0.5" id="p-bar" value="20" oninput="saveCurrentProfileInputs()">
       </div>
       <div>
-        <label>Skok wagi</label>
-        <input type="text" value="2.5 kg (automatyczny)" disabled>
+        <label>Skok wagi (kg)</label>
+        <input type="number" step="0.5" id="p-weight-step" value="2.5" oninput="saveCurrentProfileInputs()">
       </div>
     </div>
 
     <hr style="border: 0.5px solid var(--border); margin: 14px 0;">
 
-    <label>Czas treningu głównego (45 – 90 min, co 5 min)</label>
-    <select id="workout-time">
-      <option value="45">45 minut</option>
-      <option value="50" selected>50 minut</option>
-      <option value="55">55 minut</option>
-      <option value="60">60 minut</option>
-      <option value="65">65 minut</option>
-      <option value="70">70 minut</option>
-      <option value="75">75 minut</option>
-      <option value="80">80 minut</option>
-      <option value="85">85 minut</option>
-      <option value="90">90 minut</option>
-    </select>
-
-    <label>Główny bój sesji (baza wyliczeń % 1RM)</label>
-    <select id="session-main-lift">
-      <option value="snatch" selected>🏋️‍♂️ Rwanie (Snatch 1RM)</option>
-      <option value="clean">🏋️‍♀️ Podrzut (Clean & Jerk 1RM)</option>
-    </select>
+    <div class="row">
+      <div>
+        <label>Czas treningu (min)</label>
+        <select id="workout-time">
+          <option value="45">45 minut</option>
+          <option value="50" selected>50 minut</option>
+          <option value="55">55 minut</option>
+          <option value="60">60 minut</option>
+          <option value="65">65 minut</option>
+          <option value="70">70 minut</option>
+          <option value="75">75 minut</option>
+          <option value="80">80 minut</option>
+          <option value="85">85 minut</option>
+          <option value="90">90 minut</option>
+        </select>
+      </div>
+      <div>
+        <label>Główny bój sesji</label>
+        <select id="session-main-lift">
+          <option value="snatch" selected>🏋️‍♂️ Rwanie (Snatch)</option>
+          <option value="clean">🏋️‍♀️ Podrzut (Clean)</option>
+        </select>
+      </div>
+      <div>
+        <label>Poziom (Intensywność)</label>
+        <select id="session-intensity-level">
+          <option value="1.00" selected>MAX 100</option>
+          <option value="0.95">Heavy 95</option>
+          <option value="0.90">Medium 90</option>
+          <option value="0.85">Moderate 85</option>
+          <option value="0.80">Deload 80</option>
+        </select>
+      </div>
+    </div>
 
     <label>Wklej tekst planu treningowego</label>
     <textarea id="board-text" rows="8" placeholder="Np. 1/ CIĄG + ZAKŁADANIE + OHS&#10;20-30 / 3+3+3 powtórzenia, 3 serie" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0b1120; color: var(--text); font-size: 0.9rem; resize: vertical; font-family: monospace;"></textarea>
@@ -211,7 +226,7 @@
   <div id="step-2" class="card hidden">
     <h2>2. Weryfikacja planu i rampy</h2>
     <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
-      Zakresy % zostaną automatycznie rozłożone liniowo z serii na serię. Pusta sztanga to domyślnie 20 kg.
+      Zakresy % zostaną automatycznie rozłożone liniowo z serii na serię oraz przeskalowane wybranym poziomem intensywności.
     </p>
     
     <div id="parsed-plan-container"></div>
@@ -299,7 +314,7 @@
     <h2 style="color: var(--success); text-align: center; font-size: 1.5rem;">🎉 Świetna robota!</h2>
     <p style="text-align: center; margin: 8px 0;" id="cooldown-summary">Główna część treningu zakończona w zadanym czasie!</p>
 
-    <!-- TONNAŻ I RANKING -->
+    <!-- TONAŻ I RANKING -->
     <div style="background: #0b1120; border: 1px solid var(--accent); border-radius: 10px; padding: 16px; margin: 12px 0; text-align: center;">
       <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Całkowity zaliczony tonaż</div>
       <div id="cooldown-tonnage-val" style="font-size: 2.4rem; font-weight: 900; color: var(--accent); margin: 4px 0; letter-spacing: 1px;">0 kg</div>
@@ -346,15 +361,10 @@
 </div>
 
 <script>
-// ========================================================
-// 🔑 KLUCZ API GEMINI
-// ========================================================
-// Aplikacja działa 100% lokalnie. Brak klucza API.
-
 // --- STAN APLIKACJI I BAZA LOKALNA ---
 let appData = {
   profiles: JSON.parse(localStorage.getItem('wl_profiles')) || [
-    { id: 'default', name: 'Marcin', gender: 'male', age: 35, bodyweight: 85.0, snatch: 100, clean: 125, barWeight: 20 }
+    { id: 'default', name: 'Marcin', gender: 'male', age: 35, bodyweight: 85.0, snatch: 100, clean: 125, barWeight: 20, weightStep: 2.5 }
   ],
   currentProfileId: localStorage.getItem('wl_cur_profile') || 'default',
   history: JSON.parse(localStorage.getItem('wl_history')) || []
@@ -371,7 +381,9 @@ let activeWorkout = {
   isPaused: false,
   startTime: null,
   totalTonnage: 0,
-  totalExercisesCount: 0
+  totalExercisesCount: 0,
+  intensityMultiplier: 1.0,
+  weightStep: 2.5
 };
 
 let cooldownInterval = null;
@@ -422,6 +434,7 @@ function loadSelectedProfile() {
     document.getElementById('p-snatch').value = p.snatch || 100;
     document.getElementById('p-clean').value = p.clean || 125;
     document.getElementById('p-bar').value = p.barWeight || 20;
+    document.getElementById('p-weight-step').value = p.weightStep || 2.5;
     updateTotalScore();
   }
 }
@@ -435,6 +448,7 @@ function saveCurrentProfileInputs() {
     p.snatch = parseFloat(document.getElementById('p-snatch').value) || 100;
     p.clean = parseFloat(document.getElementById('p-clean').value) || 125;
     p.barWeight = parseFloat(document.getElementById('p-bar').value) || 20;
+    p.weightStep = parseFloat(document.getElementById('p-weight-step').value) || 2.5;
     localStorage.setItem('wl_profiles', JSON.stringify(appData.profiles));
     updateTotalScore();
   }
@@ -462,7 +476,7 @@ function updateTotalScore() {
 function createNewProfile() {
   const name = prompt("Podaj nazwę/imię profilu:");
   if (!name) return;
-  const newP = { id: 'p_' + Date.now(), name, gender: 'male', age: 30, bodyweight: 85.0, snatch: 80, clean: 100, barWeight: 20 };
+  const newP = { id: 'p_' + Date.now(), name, gender: 'male', age: 30, bodyweight: 85.0, snatch: 80, clean: 100, barWeight: 20, weightStep: 2.5 };
   appData.profiles.push(newP);
   appData.currentProfileId = newP.id;
   localStorage.setItem('wl_profiles', JSON.stringify(appData.profiles));
@@ -494,7 +508,7 @@ function exportProfile() {
 }
 
 // ========================================================
-// 📖 SŁOWNIK TERMINOLOGII I SKRÓTÓW OLIMPIC WEIGHTLIFTING
+// 📖 SŁOWNIK TERMINOLOGII I SKRÓTÓW DWUBOJU
 // ========================================================
 const WL_LEXICON = {
   "rw": { full: "Rwanie", base: "snatch" },
@@ -570,8 +584,10 @@ function generateProgressivePercentages(minPct, maxPct, setsCount) {
   return percentages;
 }
 
-function roundTo2_5(val, barWeight = 20) {
-  let rounded = Math.round(val / 2.5) * 2.5;
+// Zaokrąglenie do najbliższego skoku wagi z zachowaniem dolnego progu (wagi gryfu)
+function roundToStep(val, barWeight = 20, step = 2.5) {
+  const s = step > 0 ? step : 2.5;
+  let rounded = Math.round(val / s) * s;
   return Math.max(rounded, barWeight);
 }
 
@@ -579,11 +595,11 @@ function calculatePlates(totalWeight, barWeight = 20) {
   if (totalWeight <= barWeight) return "Sam gryf bez obciążenia";
   let perSide = (totalWeight - barWeight) / 2;
   let remaining = perSide;
-  const availablePlates = [25, 20, 15, 10, 5, 2.5, 1.25];
+  const availablePlates = [25, 20, 15, 10, 5, 2.5, 1.25, 0.5];
   const platesUsed = [];
 
   for (let plate of availablePlates) {
-    while (remaining >= plate) {
+    while (remaining >= plate - 0.001) {
       platesUsed.push(plate);
       remaining -= plate;
       remaining = Math.round(remaining * 100) / 100;
@@ -737,10 +753,15 @@ function startWorkout() {
   saveCurrentProfileInputs();
   const profile = appData.profiles.find(x => x.id === appData.currentProfileId);
   const totalMin = parseInt(document.getElementById('workout-time').value, 10);
+  const intensityLevel = parseFloat(document.getElementById('session-intensity-level').value) || 1.0;
+  const userWeightStep = parseFloat(document.getElementById('p-weight-step').value) || 2.5;
+
   activeWorkout.mainTimeMinutes = totalMin;
   activeWorkout.mainTimeRemaining = totalMin * 60;
   activeWorkout.flattenedSets = [];
   activeWorkout.totalExercisesCount = activeWorkout.plan.length;
+  activeWorkout.intensityMultiplier = intensityLevel;
+  activeWorkout.weightStep = userWeightStep;
 
   activeWorkout.plan.forEach((item, index) => {
     const name = document.getElementById(`plan-name-${index}`).value;
@@ -755,11 +776,18 @@ function startWorkout() {
     const repsNum = parseRepsNumber(reps);
 
     progressivePcts.forEach((pct, sIdx) => {
-      let targetKg = roundTo2_5((pct / 100) * baseWeight, profile.barWeight);
+      // Wariant A: skalowanie proporcjonalne przez poziom intensywności
+      const scaledPct = pct * intensityLevel;
+      let rawCalculatedKg = (scaledPct / 100) * baseWeight;
+
       if (pct <= 30 && minPct === maxPct) {
-          targetKg = roundTo2_5(pct, profile.barWeight); // Fallback: jeśli wpisano np. puste 20kg 
+        // Fallback dla wpisów rozgrzewkowych o stałym obciążeniu
+        rawCalculatedKg = pct;
       }
-      const restMultiplier = pct < 50 ? 0.75 : (pct >= 75 ? 1.35 : 1.0);
+
+      // Zaokrąglenie do wybranego kroku wagi z dolnym progiem równym wadze gryfu
+      const targetKg = roundToStep(rawCalculatedKg, profile.barWeight, userWeightStep);
+      const restMultiplier = scaledPct < 50 ? 0.75 : (scaledPct >= 75 ? 1.35 : 1.0);
 
       activeWorkout.flattenedSets.push({
         exerciseIndex: index + 1,
@@ -770,7 +798,8 @@ function startWorkout() {
         repsNumeric: repsNum,
         setNum: sIdx + 1,
         totalSetsOfEx: sets,
-        percent: pct,
+        percent: Math.round(scaledPct),
+        nominalPercent: pct,
         restMultiplier,
         completed: false
       });
@@ -812,7 +841,9 @@ function renderHUD() {
   document.getElementById('hud-exercise-reps').textContent = current.reps;
 
   document.getElementById('hud-weight').textContent = current.targetKg.toFixed(1);
-  document.getElementById('hud-pct-val').textContent = current.percent <= 30 && current.targetKg <= 30 ? `ROZGRZEWKA` : `${current.percent}% 1RM`;
+  document.getElementById('hud-pct-val').textContent = current.percent <= 30 && current.targetKg <= (profile.barWeight + 5) 
+    ? `ROZGRZEWKA` 
+    : `${current.percent}% 1RM`;
 
   document.getElementById('hud-ex-set').textContent = `${current.exerciseIndex} / ${current.setNum}`;
   document.getElementById('hud-ex-set-sub').textContent = `Ćw. ${current.exerciseIndex} z ${current.totalExercises} • Seria ${current.setNum} z ${current.totalSetsOfEx}`;
@@ -918,10 +949,11 @@ function startCooldown() {
      const gender = profile.gender || 'male';
      
      const sinclairPoints = dwuboj * getSinclairCoeff(bw, gender);
-     const qPoints = getQPoints(dwuboj, bw, age, gender);
+     const qPoints = getQPoints(dwuboj, bw, gender);
+     const qMasters = getQMasters(dwuboj, bw, age, gender);
      
      document.getElementById('cd-sinclair').textContent = sinclairPoints.toFixed(2);
-     document.getElementById('cd-qpoints').textContent = age >= 30 ? qPoints.toFixed(2) : "N/A";
+     document.getElementById('cd-qpoints').textContent = age >= 30 ? qMasters.toFixed(2) : qPoints.toFixed(2);
   }
   
   let pastTonnages = appData.history.map(h => h.tonnage || 0);
@@ -1017,8 +1049,7 @@ function getSinclairCoeff(bw, gender = 'male') {
     return Math.pow(10, A * Math.pow(Math.log10(bw / b), 2));
 }
 
-// Sztywne tabele współczynników wiekowych Meltzer-Faber / Huebner 
-// (Oficjalny standard IMWA i PZPC dla Q-Masters)
+// Sztywne tabele współczynników wiekowych IMWA (Age Factors 2025)
 function getMeltzerFaberCoeff(age, gender = 'male') {
     if (!Number.isFinite(age) || age < 30) return 1.0;
     const imwaMen = {
@@ -1054,6 +1085,7 @@ function getQPoints(total, bw, gender, options = {}) {
     }
     return total * (463.26 / (416.70 - 47.87 * Math.pow(normalizedBw / 100, -2) + 18.93 * Math.pow(normalizedBw / 100, 2)));
 }
+
 function getQMasters(total, bw, age, gender, options = {}) {
     const qPoints = getQPoints(total, bw, gender, options);
     const ageFactor = getMeltzerFaberCoeff(age, gender);
@@ -1064,24 +1096,6 @@ function pad(n) { return n < 10 ? '0' + n : n; }
 
 // Inicjalizacja
 initProfiles();
-
-/* 
-======================================================================
-PROMPTY SYSTEMOWE DLA MODUŁU AI (OCR TRANSKRYPCJA)
-======================================================================
-Jesteś wyspecjalizowanym asystentem OCR i transkrypcji planów treningowych.
-Twoim jedynym zadaniem jest bezbłędne odczytywanie odręcznych notatek 
-z tablic treningowych (dwubój olimpijski) i formatowanie ich w ścisły kod tekstowy.
-ZASADY FORMATOWANIA WYJŚCIOWEGO:
-1. Zwracaj WYŁĄCZNIE blok czystego tekstu wewnątrz znacznika kodu (```text ... ```).
-2. Każde ćwiczenie musi zaczynać się od: [NUMER]/ [NAZWA ĆWICZENIA DUŻYMI LITERAMI].
-3. Parametry: [CIĘŻAR LUB ZAKRES %] / [POWTÓRZENIA] powtórzenia, [SERIE] serie.
-4. Multi-rampy: Wypisz każdą rampę w nowej linii pod tą samą nazwą.
-5. Jeśli brakuje serii: przyjmij domyślnie 1 seria.
-6. Sumuj powtórzenia złożone (np. 3+3+(3+3) na 3+3+3+3).
-7. Pusta sztanga / GRYF = 20.
-======================================================================
-*/
 </script>
 </body>
 </html>
