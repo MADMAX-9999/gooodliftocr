@@ -394,18 +394,71 @@ let activeWorkout = {
 let cooldownInterval = null;
 let cooldownRemaining = 15 * 60;
 
-// Audio sygnały
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+// ========================================================
+// 🔊 AKUSTYKA POMOSTU (ZOPTYMALIZOWANA POD iOS / SAFARI)
+// ========================================================
+let audioCtx = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      audioCtx = new AudioContextClass();
+    }
+  }
+  return audioCtx;
+}
+
+// Odblokowanie kontekstu audio na iPhonie przy pierwszym dotknięciu ekranu
+function unlockAudioContext() {
+  const ctx = getAudioContext();
+  if (ctx && ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      // Odtwórz jednorazowo niesłyszalny bufor zerowy, aby wybudzić WebKit audio engine
+      try {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+      } catch (e) {}
+    });
+  }
+}
+
+// Globalne nasłuchiwacze gestu odblokowującego audio na iOS
+['touchstart', 'touchend', 'click'].forEach(eventType => {
+  document.addEventListener(eventType, unlockAudioContext, { once: true, passive: true });
+});
+
 function playBeep(freq = 600, duration = 0.15) {
   try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+
+    // Zabezpieczenie przed trzaskami głośnika w telefonie
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+    gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + duration);
+
     osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.frequency.value = freq;
-    osc.start();
-    setTimeout(() => osc.stop(), duration * 1000);
-  } catch (e) {}
+    gain.connect(ctx.destination);
+
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  } catch (e) {
+    console.error("Audio error:", e);
+  }
 }
 
 function parseRepsNumber(repsStr) {
@@ -518,7 +571,7 @@ function exportProfile() {
 }
 
 // ========================================================
-// 📖 SŁOWNIK TERMINOLOGII I SKRÓTÓW DWUBOJU (weightlifting_lexicon.json)
+// 📖 SŁOWNIK TERMINOLOGII I SKRÓTÓW DWUBOJU
 // ========================================================
 const WL_LEXICON = {
   "rw": { full: "Rwanie", base: "snatch" },
@@ -634,7 +687,7 @@ function parseWorkoutTextLocal(text, defaultBase = "snatch") {
   const plan = [];
   let currentExercise = null;
   
-  for(let line of lines) {
+  for (let line of lines) {
      if (/^\d+\s*[\/\.]\s*[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/i.test(line)) {
         let name = line.replace(/^\d+\s*[\/\.]\s*/, '').trim();
         const analysis = analyzeExerciseTerminology(name, defaultBase);
@@ -688,6 +741,7 @@ function parseWorkoutTextLocal(text, defaultBase = "snatch") {
 }
 
 function processText() {
+  unlockAudioContext();
   saveCurrentProfileInputs();
   const textInput = document.getElementById('board-text').value.trim();
   const defaultBase = document.getElementById('session-main-lift') ? document.getElementById('session-main-lift').value : 'snatch';
@@ -699,17 +753,18 @@ function processText() {
   
   try {
      const plan = parseWorkoutTextLocal(textInput, defaultBase);
-     if(plan.length === 0) {
+     if (plan.length === 0) {
         alert("Nie udało się odczytać żadnych ćwiczeń z tego formatu. Upewnij się, że tekst jest zgodny ze wzorem.");
         return;
      }
      renderPlanEditor(plan);
-  } catch(e) {
+  } catch (e) {
      alert("Błąd parsowania: " + e.message);
   }
 }
 
 function loadMockPlan() {
+  unlockAudioContext();
   saveCurrentProfileInputs();
   const mockPlan = [
     { name: "Ciąg + zakładanie + OHS", base: "snatch", minPercent: 20, maxPercent: 30, reps: "3+3+3", sets: 3 },
@@ -770,6 +825,7 @@ function renderPlanEditor(plan) {
 
 // --- START I OBSŁUGA TRENINGU ---
 function startWorkout() {
+  unlockAudioContext();
   saveCurrentProfileInputs();
   const profile = appData.profiles.find(x => x.id === appData.currentProfileId);
   const totalMin = parseInt(document.getElementById('workout-time').value, 10);
@@ -791,7 +847,6 @@ function startWorkout() {
     const reps = document.getElementById(`plan-reps-${index}`).value;
     const sets = parseInt(document.getElementById(`plan-sets-${index}`).value, 10);
 
-    // Baza 1RM: Rwanie vs Zarzut vs Podrzut
     let baseWeight = profile.snatch;
     if (base === 'clean') baseWeight = profile.clean;
     else if (base === 'jerk') baseWeight = profile.jerk || profile.clean;
@@ -800,15 +855,13 @@ function startWorkout() {
     const repsNum = parseRepsNumber(reps);
 
     progressivePcts.forEach((pct, sIdx) => {
-      // Wariant A: skalowanie proporcjonalne
       const scaledPct = pct * intensityLevel;
       let rawCalculatedKg = (scaledPct / 100) * baseWeight;
 
       if (pct <= 30 && minPct === maxPct) {
-        rawCalculatedKg = pct; // Fallback stałego obciążenia wpisanego z ręki
+        rawCalculatedKg = pct;
       }
 
-      // Zaokrąglenie do skoku wagi z zachowaniem wagi gryfu jako dolnego progu
       const targetKg = roundToStep(rawCalculatedKg, profile.barWeight, userWeightStep);
       const restMultiplier = scaledPct < 50 ? 0.75 : (scaledPct >= 75 ? 1.35 : 1.0);
 
@@ -965,7 +1018,7 @@ function startCooldown() {
   document.getElementById('cooldown-tonnage-val').textContent = currentTonnage.toLocaleString('pl-PL') + ' kg';
   
   const profile = appData.profiles.find(x => x.id === appData.currentProfileId);
-  if(profile) {
+  if (profile) {
      const dwuboj = (profile.snatch || 0) + (profile.jerk || profile.clean || 0);
      const bw = profile.bodyweight || 85;
      const age = profile.age || 30;
@@ -1072,7 +1125,7 @@ function getSinclairCoeff(bw, gender = 'male') {
     return Math.pow(10, A * Math.pow(Math.log10(bw / b), 2));
 }
 
-// Sztywne tabele współczynników wiekowych Meltzer-Faber / Huebner 
+// Tabele współczynników wiekowych IMWA Age Factors 2025
 function getMeltzerFaberCoeff(age, gender = 'male') {
     if (!Number.isFinite(age) || age < 30) return 1.0;
     const imwaMen = {
