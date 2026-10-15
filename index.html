@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GOOOD Lift OCR</title>
+  <title>GOOOD Lift OCR v1.13</title>
 
   <!-- PWA & Mobile Web App Meta Tags -->
   <link rel="manifest" href="manifest.json">
@@ -30,6 +30,7 @@
     .container { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 14px; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
     h1 { font-size: 1.5rem; text-align: center; margin-bottom: 6px; color: var(--accent); font-weight: 900; letter-spacing: 0.5px; }
+    .version-tag { font-size: 0.85rem; color: var(--text-muted); font-weight: 700; margin-left: 6px; }
     h2 { font-size: 1.15rem; margin-bottom: 8px; }
     label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; margin-top: 8px; }
     input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: #0b1120; color: var(--text); font-size: 1rem; }
@@ -86,7 +87,7 @@
 <body>
 
 <div class="container">
-  <h1>🏋️‍♂️ GOOOD Lift OCR</h1>
+  <h1>🏋️‍♂️ GOOOD Lift OCR <span class="version-tag">v1.13</span></h1>
 
   <!-- KROK 1: PROFIL I PARAMETRY -->
   <div id="step-1" class="card">
@@ -182,8 +183,8 @@
         <label>Czas sesji</label>
         <select id="workout-time">
           <option value="45">45 minut</option>
-          <option value="50" selected>50 minut</option>
-          <option value="55">55 minut</option>
+          <option value="50">50 minut</option>
+          <option value="55" selected>55 minut</option>
           <option value="60">60 minut</option>
           <option value="65">65 minut</option>
           <option value="70">70 minut</option>
@@ -231,7 +232,7 @@
   <div id="step-2" class="card hidden">
     <h2>2. Weryfikacja planu i rampy</h2>
     <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
-      Zakresy % zostaną automatycznie rozłożone liniowo z serii na serię oraz przeskalowane wybranym poziomem intensywności.
+      Zakresy % zostaną automatycznie rozłożone liniowo z serii na serię, przeskalowane wybranym poziomem intensywności oraz wymuszą progresję o wybrany krok wagowy (z wyłączeniem pustego gryfu).
     </p>
     
     <div id="parsed-plan-container"></div>
@@ -253,7 +254,7 @@
       </div>
       <div class="top-metric-tile">
         <div class="top-metric-label">Czas do końca</div>
-        <div class="top-metric-value" id="hud-total-timer">50:00</div>
+        <div class="top-metric-value" id="hud-total-timer">55:00</div>
       </div>
     </div>
 
@@ -319,11 +320,28 @@
     <h2 style="color: var(--success); text-align: center; font-size: 1.5rem;">🎉 Świetna robota!</h2>
     <p style="text-align: center; margin: 8px 0;" id="cooldown-summary">Główna część treningu zakończona w zadanym czasie!</p>
 
-    <!-- TONNAŻ I RANKING -->
+    <!-- TONNAŻ ROZDZIELONY NA BOJE I RANKING -->
     <div style="background: #0b1120; border: 1px solid var(--accent); border-radius: 10px; padding: 16px; margin: 12px 0; text-align: center;">
       <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Całkowity zaliczony tonaż</div>
       <div id="cooldown-tonnage-val" style="font-size: 2.4rem; font-weight: 900; color: var(--accent); margin: 4px 0; letter-spacing: 1px;">0 kg</div>
-      <div id="cooldown-ranking-text" style="font-size: 0.95rem; color: var(--text); line-height: 1.5; margin-top: 8px;"></div>
+      
+      <!-- TRÓJPODZIAŁ OBJĘTOŚCI NA BOJE OLIMPIJSKIE -->
+      <div class="row" style="margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); text-align: center;">
+        <div>
+          <div id="cd-tonnage-snatch" style="font-size: 1.35rem; font-weight: 900; color: #38bdf8;">0 kg</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">RWANIE</div>
+        </div>
+        <div style="border-left: 1px solid var(--border);">
+          <div id="cd-tonnage-clean" style="font-size: 1.35rem; font-weight: 900; color: #38bdf8;">0 kg</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">ZARZUT / SIADY</div>
+        </div>
+        <div style="border-left: 1px solid var(--border);">
+          <div id="cd-tonnage-jerk" style="font-size: 1.35rem; font-weight: 900; color: #38bdf8;">0 kg</div>
+          <div style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">PODRZUT / GÓRA</div>
+        </div>
+      </div>
+
+      <div id="cooldown-ranking-text" style="font-size: 0.95rem; color: var(--text); line-height: 1.5; margin-top: 12px;"></div>
       
       <hr style="border: 0.5px solid var(--border); margin: 12px 0;">
       
@@ -379,8 +397,8 @@ let activeWorkout = {
   plan: [],
   flattenedSets: [],
   currentSetIndex: 0,
-  mainTimeMinutes: 50,
-  mainTimeRemaining: 3000,
+  mainTimeMinutes: 55,
+  mainTimeRemaining: 3300,
   restRemaining: 90,
   intervalId: null,
   isPaused: false,
@@ -409,12 +427,11 @@ function getAudioContext() {
   return audioCtx;
 }
 
-// Odblokowanie kontekstu audio na iPhonie przy pierwszym dotknięciu ekranu
+// Odblokowanie kontekstu audio na smartfonie przy pierwszym dotknięciu ekranu
 function unlockAudioContext() {
   const ctx = getAudioContext();
   if (ctx && ctx.state === 'suspended') {
     ctx.resume().then(() => {
-      // Odtwórz jednorazowo niesłyszalny bufor zerowy, aby wybudzić WebKit audio engine
       try {
         const buffer = ctx.createBuffer(1, 1, 22050);
         const source = ctx.createBufferSource();
@@ -426,7 +443,6 @@ function unlockAudioContext() {
   }
 }
 
-// Globalne nasłuchiwacze gestu odblokowującego audio na iOS
 ['touchstart', 'touchend', 'click'].forEach(eventType => {
   document.addEventListener(eventType, unlockAudioContext, { once: true, passive: true });
 });
@@ -446,7 +462,6 @@ function playBeep(freq = 600, duration = 0.15) {
     osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, ctx.currentTime);
 
-    // Zabezpieczenie przed trzaskami głośnika w telefonie
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.02);
     gain.gain.linearRampToValueAtTime(0.0001, ctx.currentTime + duration);
@@ -521,7 +536,6 @@ function updateTotalScore() {
   const age = parseInt(document.getElementById('p-age').value, 10) || 30;
   const gender = document.getElementById('p-gender').value || 'male';
   
-  // Oficjalny dwubój olimpijski: Rwanie + Podrzut
   const total = snatch + jerk;
   const ratio = bw > 0 ? (total / bw).toFixed(2) : '0.00';
   const sinclairPoints = total * getSinclairCoeff(bw, gender);
@@ -828,7 +842,7 @@ function startWorkout() {
   unlockAudioContext();
   saveCurrentProfileInputs();
   const profile = appData.profiles.find(x => x.id === appData.currentProfileId);
-  const totalMin = parseInt(document.getElementById('workout-time').value, 10);
+  const totalMin = parseInt(document.getElementById('workout-time').value, 10) || 55;
   const intensityLevel = parseFloat(document.getElementById('session-intensity-level').value) || 1.0;
   const userWeightStep = parseFloat(document.getElementById('p-weight-step').value) || 2.5;
 
@@ -839,6 +853,7 @@ function startWorkout() {
   activeWorkout.intensityMultiplier = intensityLevel;
   activeWorkout.weightStep = userWeightStep;
 
+  // 1. Spłaszczenie serii i kalkulacja wag czasowych oraz wymuszonej progresji rampy
   activeWorkout.plan.forEach((item, index) => {
     const name = document.getElementById(`plan-name-${index}`).value;
     const base = document.getElementById(`plan-base-${index}`).value;
@@ -853,6 +868,10 @@ function startWorkout() {
 
     const progressivePcts = generateProgressivePercentages(minPct, maxPct, sets);
     const repsNum = parseRepsNumber(reps);
+    const liftDuration = Math.round(15 + (repsNum * 2.5));
+    const repsMultiplier = 1.0 + Math.max(0, repsNum - 2) * 0.05;
+
+    let prevKgInExercise = null;
 
     progressivePcts.forEach((pct, sIdx) => {
       const scaledPct = pct * intensityLevel;
@@ -862,30 +881,50 @@ function startWorkout() {
         rawCalculatedKg = pct;
       }
 
-      const targetKg = roundToStep(rawCalculatedKg, profile.barWeight, userWeightStep);
-      const restMultiplier = scaledPct < 50 ? 0.75 : (scaledPct >= 75 ? 1.35 : 1.0);
+      let targetKg = roundToStep(rawCalculatedKg, profile.barWeight, userWeightStep);
+
+      // ZASADA WYMUSZONEJ PROGRESJI W RAMPIE:
+      // Jeżeli w serii występuje progres (minPct < maxPct), kolejne podejście musi wzrosnąć co najmniej o userWeightStep.
+      // WYJĄTEK: Zasada nie dotyczy serii, w których ciężar jest mniejszy lub równy wadze samej sztangi.
+      if (maxPct > minPct && prevKgInExercise !== null) {
+        if (targetKg > profile.barWeight && targetKg <= prevKgInExercise) {
+          targetKg = Math.round((prevKgInExercise + userWeightStep) * 100) / 100;
+        }
+      }
+      prevKgInExercise = targetKg;
+
+      const intensityMultiplier = scaledPct < 50 ? 0.75 : (scaledPct >= 75 ? 1.35 : 1.0);
+      const setWeightScore = intensityMultiplier * repsMultiplier;
 
       activeWorkout.flattenedSets.push({
         exerciseIndex: index + 1,
         totalExercises: activeWorkout.totalExercisesCount,
         name,
+        base,
         targetKg,
         reps,
         repsNumeric: repsNum,
+        liftDuration,
+        setWeightScore,
         setNum: sIdx + 1,
         totalSetsOfEx: sets,
         percent: Math.round(scaledPct),
         nominalPercent: pct,
-        restMultiplier,
         completed: false
       });
     });
   });
 
+  // 2. Precyzyjne zbilansowanie przerw w oknie całkowitego czasu sesji
   const totalSets = activeWorkout.flattenedSets.length;
-  const avgRest = Math.floor((activeWorkout.mainTimeRemaining - (totalSets * 25)) / totalSets);
+  const totalLiftTime = activeWorkout.flattenedSets.reduce((sum, s) => sum + s.liftDuration, 0);
+  const totalRestBudget = Math.max(totalSets * 40, activeWorkout.mainTimeRemaining - totalLiftTime);
+  const totalScoreSum = activeWorkout.flattenedSets.reduce((sum, s) => sum + s.setWeightScore, 0);
+
+  const restPerUnit = totalScoreSum > 0 ? (totalRestBudget / totalScoreSum) : 60;
+
   activeWorkout.flattenedSets.forEach(s => {
-    s.restSeconds = Math.max(45, Math.round(avgRest * s.restMultiplier));
+    s.restSeconds = Math.max(40, Math.round(s.setWeightScore * restPerUnit));
   });
 
   activeWorkout.currentSetIndex = 0;
@@ -895,14 +934,35 @@ function startWorkout() {
   startTimer();
 }
 
+// --- KALKULACJA TONAŻU ROZDZIELONEGO NA BOJE ---
 function calculateCurrentTonnage() {
-  let tonnage = 0;
+  let snatchTonnage = 0;
+  let cleanTonnage = 0;
+  let jerkTonnage = 0;
+
   for (let i = 0; i < activeWorkout.flattenedSets.length; i++) {
-    if (activeWorkout.flattenedSets[i].completed) {
-      tonnage += (activeWorkout.flattenedSets[i].targetKg * activeWorkout.flattenedSets[i].repsNumeric);
+    const s = activeWorkout.flattenedSets[i];
+    if (s.completed) {
+      const vol = (s.targetKg * s.repsNumeric);
+      if (s.base === 'snatch') {
+        snatchTonnage += vol;
+      } else if (s.base === 'clean') {
+        cleanTonnage += vol;
+      } else if (s.base === 'jerk') {
+        jerkTonnage += vol;
+      } else {
+        snatchTonnage += vol;
+      }
     }
   }
-  return Math.round(tonnage);
+
+  const total = Math.round(snatchTonnage + cleanTonnage + jerkTonnage);
+  return {
+    snatch: Math.round(snatchTonnage),
+    clean: Math.round(cleanTonnage),
+    jerk: Math.round(jerkTonnage),
+    total: total
+  };
 }
 
 function renderHUD() {
@@ -925,13 +985,13 @@ function renderHUD() {
   document.getElementById('hud-ex-set-sub').textContent = `Ćw. ${current.exerciseIndex} z ${current.totalExercises} • Seria ${current.setNum} z ${current.totalSetsOfEx}`;
   document.getElementById('hud-set-global').textContent = `Seria łączna: ${activeWorkout.currentSetIndex + 1} / ${activeWorkout.flattenedSets.length}`;
 
-  const totalKgDone = calculateCurrentTonnage();
-  document.getElementById('hud-tonnage').textContent = totalKgDone.toLocaleString('pl-PL');
+  const tonnageBreakdown = calculateCurrentTonnage();
+  document.getElementById('hud-tonnage').textContent = tonnageBreakdown.total.toLocaleString('pl-PL');
 
   document.getElementById('hud-plates').textContent = calculatePlates(current.targetKg, profile.barWeight);
 
   if (next) {
-    const diff = next.targetKg - current.targetKg;
+    const diff = Math.round((next.targetKg - current.targetKg) * 100) / 100;
     let changeText = "Ten sam ciężar";
     if (diff > 0) changeText = `Dołóż po ${(diff / 2).toFixed(2).replace('.00','')} kg na stronę`;
     if (diff < 0) changeText = `Zdejmij po ${(Math.abs(diff) / 2).toFixed(2).replace('.00','')} kg ze strony`;
@@ -1014,9 +1074,14 @@ function abortWorkout() {
 
 // --- KROK 4: COOL DOWN I ZAPIS ---
 function startCooldown() {
-  const currentTonnage = calculateCurrentTonnage();
-  document.getElementById('cooldown-tonnage-val').textContent = currentTonnage.toLocaleString('pl-PL') + ' kg';
+  const currentTonnageObj = calculateCurrentTonnage();
+  document.getElementById('cooldown-tonnage-val').textContent = currentTonnageObj.total.toLocaleString('pl-PL') + ' kg';
   
+  // Wypełnienie kafelków trójpodziału
+  document.getElementById('cd-tonnage-snatch').textContent = currentTonnageObj.snatch.toLocaleString('pl-PL') + ' kg';
+  document.getElementById('cd-tonnage-clean').textContent = currentTonnageObj.clean.toLocaleString('pl-PL') + ' kg';
+  document.getElementById('cd-tonnage-jerk').textContent = currentTonnageObj.jerk.toLocaleString('pl-PL') + ' kg';
+
   const profile = appData.profiles.find(x => x.id === appData.currentProfileId);
   if (profile) {
      const dwuboj = (profile.snatch || 0) + (profile.jerk || profile.clean || 0);
@@ -1032,12 +1097,12 @@ function startCooldown() {
      document.getElementById('cd-qpoints').textContent = age >= 30 ? qMasters.toFixed(2) : qPoints.toFixed(2);
   }
   
-  let pastTonnages = appData.history.map(h => h.tonnage || 0);
-  let allTonnages = [...pastTonnages, currentTonnage];
+  let pastTonnages = appData.history.map(h => (typeof h.tonnage === 'object' ? h.tonnage.total : h.tonnage) || 0);
+  let allTonnages = [...pastTonnages, currentTonnageObj.total];
   allTonnages.sort((a, b) => b - a); 
   
   const totalWorkouts = allTonnages.length;
-  const rank = allTonnages.indexOf(currentTonnage) + 1;
+  const rank = allTonnages.indexOf(currentTonnageObj.total) + 1;
   const percentile = Math.ceil((rank / totalWorkouts) * 100);
   
   let rankingText = "";
@@ -1069,18 +1134,18 @@ function startCooldown() {
 
 function finishFullWorkout() {
   clearInterval(cooldownInterval);
-  const totalTonnageCalculated = calculateCurrentTonnage();
+  const currentTonnageObj = calculateCurrentTonnage();
   const workoutRecord = {
     date: new Date().toISOString(),
     profileName: appData.profiles.find(x => x.id === appData.currentProfileId).name,
     totalSets: activeWorkout.flattenedSets.length,
-    tonnage: totalTonnageCalculated,
+    tonnage: currentTonnageObj, // Zapis pełnego trójpodziału
     plan: activeWorkout.plan,
     completed: true
   };
   appData.history.unshift(workoutRecord);
   localStorage.setItem('wl_history', JSON.stringify(appData.history));
-  alert(`Trening zapisany! Całkowity zaliczony tonaż: ${totalTonnageCalculated.toLocaleString('pl-PL')} kg.`);
+  alert(`Trening zapisany! Całkowity zaliczony tonaż: ${currentTonnageObj.total.toLocaleString('pl-PL')} kg.`);
   showStep(1);
 }
 
@@ -1092,9 +1157,22 @@ function showHistory() {
   } else {
     appData.history.forEach((h, i) => {
       const d = new Date(h.date);
+      const totalTon = (typeof h.tonnage === 'object') ? h.tonnage.total : (h.tonnage || 0);
+      
+      let breakdownHtml = "";
+      if (typeof h.tonnage === 'object' && h.tonnage.snatch !== undefined) {
+        breakdownHtml = `<div style="font-size: 0.78rem; color: #38bdf8; margin-top: 3px;">
+          RW: <strong>${h.tonnage.snatch.toLocaleString('pl-PL')} kg</strong> • 
+          ZR: <strong>${h.tonnage.clean.toLocaleString('pl-PL')} kg</strong> • 
+          GÓRA: <strong>${h.tonnage.jerk.toLocaleString('pl-PL')} kg</strong>
+        </div>`;
+      }
+
       const div = document.createElement('div');
       div.className = 'history-item';
-      div.innerHTML = `<strong>${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong><br>Profil: <em>${h.profileName}</em> • Serie: <strong>${h.totalSets}</strong> • Tonaż: <strong>${(h.tonnage || 0).toLocaleString('pl-PL')} kg</strong>`;
+      div.innerHTML = `<strong>${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</strong><br>
+        Profil: <em>${h.profileName}</em> • Serie: <strong>${h.totalSets}</strong> • Tonaż łączny: <strong>${totalTon.toLocaleString('pl-PL')} kg</strong>
+        ${breakdownHtml}`;
       list.appendChild(div);
     });
   }
