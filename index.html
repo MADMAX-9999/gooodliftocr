@@ -41,6 +41,8 @@
     .btn-danger { background: var(--danger); color: #fff; width: 100%; }
     .btn-danger-sm { background: #7f1d1d; color: #fecaca; padding: 10px; font-size: 0.9rem; }
     .btn-danger-sm:hover { background: var(--danger); color: #fff; }
+    .btn-rm { background: #1e293b; color: var(--accent); border: 1px solid var(--accent); }
+    .btn-rm:hover { background: var(--accent); color: #090d16; }
     .row { display: flex; gap: 8px; }
     .row > * { flex: 1; }
     .hidden { display: none !important; }
@@ -182,6 +184,7 @@
       <div>
         <label>Czas sesji</label>
         <select id="workout-time">
+          <option value="30">30 minut</option>
           <option value="45">45 minut</option>
           <option value="50">50 minut</option>
           <option value="55" selected>55 minut</option>
@@ -225,6 +228,12 @@
     <div class="row" style="margin-top: 8px;">
       <button class="btn-secondary" onclick="exportProfile()">Eksportuj Profil</button>
       <button class="btn-secondary" onclick="showHistory()">Historia Treningów</button>
+    </div>
+
+    <!-- GUZIKI TRENINGÓW DO USTALANIA 1RM (30 MIN) -->
+    <div class="row" style="margin-top: 8px;">
+      <button class="btn-rm" onclick="loadSnatch1RM()">🔥 Snatch 1RM</button>
+      <button class="btn-rm" onclick="loadCleanAndJerk1RM()">⚡ Clean and Jerk 1RM</button>
     </div>
   </div>
 
@@ -427,7 +436,6 @@ function getAudioContext() {
   return audioCtx;
 }
 
-// Odblokowanie kontekstu audio na smartfonie przy pierwszym dotknięciu ekranu
 function unlockAudioContext() {
   const ctx = getAudioContext();
   if (ctx && ctx.state === 'suspended') {
@@ -790,6 +798,56 @@ function loadMockPlan() {
   renderPlanEditor(mockPlan);
 }
 
+// --- GOTOWE TRENINGI 1RM ---
+function loadSnatch1RM() {
+  unlockAudioContext();
+  saveCurrentProfileInputs();
+  
+  const snatchPlanText = `1/ RWANIE
+30 / 5 powtórzeń, 1 seria
+40 / 3 powtórzenia, 1 seria
+50 / 3 powtórzenia, 1 seria
+60 / 2 powtórzenia, 1 seria
+70 / 2 powtórzenia, 1 seria
+80 / 1 powtórzenie, 1 seria
+87-88 / 1 powtórzenie, 1 seria
+92-93 / 1 powtórzenie, 1 seria
+95 / 1 powtórzenie, 1 seria
+102-104 / 1 powtórzenie, 1 seria
+106-108 / 1 powtórzenie, 1 seria`;
+
+  document.getElementById('board-text').value = snatchPlanText;
+  document.getElementById('workout-time').value = "30";
+  document.getElementById('session-main-lift').value = "snatch";
+
+  const plan = parseWorkoutTextLocal(snatchPlanText, "snatch");
+  renderPlanEditor(plan);
+}
+
+function loadCleanAndJerk1RM() {
+  unlockAudioContext();
+  saveCurrentProfileInputs();
+
+  const cjPlanText = `1/ PODRZUT
+35 / 3 powtórzenia, 1 seria
+45 / 3 powtórzenia, 1 seria
+55 / 2 powtórzenia, 1 seria
+65 / 2 powtórzenia, 1 seria
+75 / 1 powtórzenie, 1 seria
+82-83 / 1 powtórzenie, 1 seria
+90 / 1 powtórzenie, 1 seria
+95 / 1 powtórzenie, 1 seria
+102-104 / 1 powtórzenie, 1 seria
+106-110 / 1 powtórzenie, 1 seria`;
+
+  document.getElementById('board-text').value = cjPlanText;
+  document.getElementById('workout-time').value = "30";
+  document.getElementById('session-main-lift').value = "jerk";
+
+  const plan = parseWorkoutTextLocal(cjPlanText, "jerk");
+  renderPlanEditor(plan);
+}
+
 function renderPlanEditor(plan) {
   const container = document.getElementById('parsed-plan-container');
   container.innerHTML = '';
@@ -1077,7 +1135,6 @@ function startCooldown() {
   const currentTonnageObj = calculateCurrentTonnage();
   document.getElementById('cooldown-tonnage-val').textContent = currentTonnageObj.total.toLocaleString('pl-PL') + ' kg';
   
-  // Wypełnienie kafelków trójpodziału
   document.getElementById('cd-tonnage-snatch').textContent = currentTonnageObj.snatch.toLocaleString('pl-PL') + ' kg';
   document.getElementById('cd-tonnage-clean').textContent = currentTonnageObj.clean.toLocaleString('pl-PL') + ' kg';
   document.getElementById('cd-tonnage-jerk').textContent = currentTonnageObj.jerk.toLocaleString('pl-PL') + ' kg';
@@ -1139,7 +1196,7 @@ function finishFullWorkout() {
     date: new Date().toISOString(),
     profileName: appData.profiles.find(x => x.id === appData.currentProfileId).name,
     totalSets: activeWorkout.flattenedSets.length,
-    tonnage: currentTonnageObj, // Zapis pełnego trójpodziału
+    tonnage: currentTonnageObj,
     plan: activeWorkout.plan,
     completed: true
   };
